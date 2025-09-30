@@ -164,4 +164,4 @@ void openshmem::populateContextOpsToLLVMConversionPatterns(
     LLVMTypeConverter &converter, RewritePatternSet &patterns) {
   patterns.add<CtxCreateOpLowering, TeamCreateCtxOpLowering,
                CtxDestroyOpLowering, CtxGetTeamOpLowering>(converter);
-}
+} 

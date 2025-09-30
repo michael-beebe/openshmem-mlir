@@ -1,10 +1,15 @@
 add_mlir_library(MLIROpenSHMEMTransforms
+  # TODO: add passes here
   Passes.cpp
 
   DEPENDS
-  MLIROpenSHMEMPassIncGen
+  MLIROpenSHMEMTransformsIncGen
 
+  # FIXME: I'm not sure about the below
   LINK_LIBS PUBLIC
-  MLIRIR
-  MLIROpenSHMEM
+  MLIRArithDialect
+  MLIRMemRefDialect
+  MLIROpenSHMEMDialect
+  MLIRPass
+  MLIRTransforms
 )

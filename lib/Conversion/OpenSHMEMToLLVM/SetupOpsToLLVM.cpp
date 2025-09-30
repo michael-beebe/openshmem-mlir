@@ -5,11 +5,6 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-//
-// This file implements conversion patterns for OpenSHMEM setup operations
-// to LLVM dialect.
-//
-//===----------------------------------------------------------------------===//
 
 #include "SetupOpsToLLVM.h"
 #include "OpenSHMEMConversionUtils.h"

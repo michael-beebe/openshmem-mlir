@@ -1,33 +1,30 @@
-add_mlir_library(MLIROpenSHMEMToLLVM
+add_mlir_conversion_library(MLIROpenSHMEMToLLVM
   OpenSHMEMToLLVM.cpp
   OpenSHMEMConversionUtils.cpp
   SetupOpsToLLVM.cpp
   MemoryOpsToLLVM.cpp
   RMAOpsToLLVM.cpp
-  AtomicOpsToLLVM.cpp
-  SyncOpsToLLVM.cpp
-  Pt2ptSyncOpsToLLVM.cpp
   CollectiveOpsToLLVM.cpp
   TeamOpsToLLVM.cpp
   ContextOpsToLLVM.cpp
+  AtomicOpsToLLVM.cpp
+  SyncOpsToLLVM.cpp
+  Pt2ptSyncOpsToLLVM.cpp
 
-  LINK_LIBS PUBLIC
-  MLIRLLVMDialect
-  MLIRIR
-  MLIROpenSHMEM
+  ADDITIONAL_HEADER_DIRS
+  ${MLIR_MAIN_INCLUDE_DIR}/mlir/Conversion/OpenSHMEMToLLVM
 
   DEPENDS
-  MLIROpenSHMEMConvertPassesIncGen
-)
+  MLIRConversionPassIncGen
 
-target_include_directories(MLIROpenSHMEMToLLVM
-  PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}
-)
+  LINK_COMPONENTS
+  Core
 
-target_include_directories(MLIROpenSHMEMToLLVM
-  PUBLIC
-  ${CMAKE_CURRENT_BINARY_DIR}/../../include
-  ${CMAKE_CURRENT_SOURCE_DIR}/../../include
-)
-
+  LINK_LIBS PUBLIC
+  MLIRArithDialect
+  MLIRLLVMCommonConversion
+  MLIRLLVMDialect
+  MLIROpenSHMEMDialect
+  MLIRPass
+  MLIRTransforms
+) 

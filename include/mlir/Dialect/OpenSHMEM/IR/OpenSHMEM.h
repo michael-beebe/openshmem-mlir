@@ -21,7 +21,7 @@
 #include "mlir/Dialect/OpenSHMEM/IR/OpenSHMEMDialect.h.inc"
 
 #define GET_TYPEDEF_CLASSES
-#include "mlir/Dialect/OpenSHMEM/IR/OpenSHMEMTypes.h.inc"
+#include "mlir/Dialect/OpenSHMEM/IR/OpenSHMEMTypesGen.h.inc"
 
 #include "mlir/Dialect/OpenSHMEM/IR/OpenSHMEMEnums.h.inc"
 

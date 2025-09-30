@@ -17,8 +17,6 @@
 using namespace mlir;
 using namespace mlir::openshmem;
 
-// FIXME: check to make sure these ops are lowered correctly.
-
 namespace {
 
 //===----------------------------------------------------------------------===//
@@ -58,8 +56,7 @@ struct AtomicFetchOpLowering
     LLVM::LLVMFuncOp funcDecl =
         getOrDefineFunction(moduleOp, loc, rewriter, funcName, funcType);
 
-    // source: memref with symmetric memory space (already a pointer after type
-    // conversion)
+    // source: memref with symmetric memory space (already a pointer after type conversion)
     Value sourcePtr = adaptor.getSource();
 
     auto callOp = rewriter.create<LLVM::CallOp>(
@@ -118,8 +115,7 @@ struct CtxAtomicFetchOpLowering
 
     // ctx: context (already a pointer after type conversion)
     Value ctxPtr = adaptor.getCtx();
-    // source: memref with symmetric memory space (already a pointer after type
-    // conversion)
+    // source: memref with symmetric memory space (already a pointer after type conversion)
     Value sourcePtr = adaptor.getSource();
 
     auto callOp = rewriter.create<LLVM::CallOp>(
@@ -174,8 +170,7 @@ struct AtomicSetOpLowering
     LLVM::LLVMFuncOp funcDecl =
         getOrDefineFunction(moduleOp, loc, rewriter, funcName, funcType);
 
-    // dest: memref with symmetric memory space (already a pointer after type
-    // conversion)
+    // dest: memref with symmetric memory space (already a pointer after type conversion)
     Value destPtr = adaptor.getDest();
     // value: scalar value, may need casting
     Value value = adaptor.getValue();
@@ -234,8 +229,7 @@ struct CtxAtomicSetOpLowering
 
     // ctx: context (already a pointer after type conversion)
     Value ctxPtr = adaptor.getCtx();
-    // dest: memref with symmetric memory space (already a pointer after type
-    // conversion)
+    // dest: memref with symmetric memory space (already a pointer after type conversion)
     Value destPtr = adaptor.getDest();
     // value: scalar value, may need casting
     Value value = adaptor.getValue();
@@ -297,8 +291,7 @@ struct AtomicCompareSwapOpLowering
     LLVM::LLVMFuncOp funcDecl =
         getOrDefineFunction(moduleOp, loc, rewriter, funcName, funcType);
 
-    // dest: memref with symmetric memory space (already a pointer after type
-    // conversion)
+    // dest: memref with symmetric memory space (already a pointer after type conversion)
     Value destPtr = adaptor.getDest();
     // cond: scalar value, may need casting
     Value cond = adaptor.getCond();
@@ -380,8 +373,7 @@ struct CtxAtomicCompareSwapOpLowering
 
     // ctx: context (already a pointer after type conversion)
     Value ctxPtr = adaptor.getCtx();
-    // dest: memref with symmetric memory space (already a pointer after type
-    // conversion)
+    // dest: memref with symmetric memory space (already a pointer after type conversion)
     Value destPtr = adaptor.getDest();
     // cond: scalar value, may need casting
     Value cond = adaptor.getCond();
@@ -456,8 +448,7 @@ struct AtomicSwapOpLowering
     LLVM::LLVMFuncOp funcDecl =
         getOrDefineFunction(moduleOp, loc, rewriter, funcName, funcType);
 
-    // dest: memref with symmetric memory space (already a pointer after type
-    // conversion)
+    // dest: memref with symmetric memory space (already a pointer after type conversion)
     Value destPtr = adaptor.getDest();
     // value: scalar value, may need casting
     Value value = adaptor.getValue();
@@ -527,8 +518,7 @@ struct CtxAtomicSwapOpLowering
 
     // ctx: context (already a pointer after type conversion)
     Value ctxPtr = adaptor.getCtx();
-    // dest: memref with symmetric memory space (already a pointer after type
-    // conversion)
+    // dest: memref with symmetric memory space (already a pointer after type conversion)
     Value destPtr = adaptor.getDest();
     // value: scalar value, may need casting
     Value value = adaptor.getValue();
@@ -592,8 +582,7 @@ struct AtomicFetchIncOpLowering
     LLVM::LLVMFuncOp funcDecl =
         getOrDefineFunction(moduleOp, loc, rewriter, funcName, funcType);
 
-    // dest: memref with symmetric memory space (already a pointer after type
-    // conversion)
+    // dest: memref with symmetric memory space (already a pointer after type conversion)
     Value destPtr = adaptor.getDest();
 
     auto callOp = rewriter.create<LLVM::CallOp>(
@@ -651,8 +640,7 @@ struct CtxAtomicFetchIncOpLowering
 
     // ctx: context (already a pointer after type conversion)
     Value ctxPtr = adaptor.getCtx();
-    // dest: memref with symmetric memory space (already a pointer after type
-    // conversion)
+    // dest: memref with symmetric memory space (already a pointer after type conversion)
     Value destPtr = adaptor.getDest();
 
     auto callOp = rewriter.create<LLVM::CallOp>(
@@ -699,8 +687,7 @@ struct AtomicIncOpLowering
     LLVM::LLVMFuncOp funcDecl =
         getOrDefineFunction(moduleOp, loc, rewriter, funcName, funcType);
 
-    // dest: memref with symmetric memory space (already a pointer after type
-    // conversion)
+    // dest: memref with symmetric memory space (already a pointer after type conversion)
     Value destPtr = adaptor.getDest();
 
     rewriter.create<LLVM::CallOp>(loc, funcDecl,
@@ -741,8 +728,7 @@ struct CtxAtomicIncOpLowering
 
     // ctx: context (already a pointer after type conversion)
     Value ctxPtr = adaptor.getCtx();
-    // dest: memref with symmetric memory space (already a pointer after type
-    // conversion)
+    // dest: memref with symmetric memory space (already a pointer after type conversion)
     Value destPtr = adaptor.getDest();
 
     rewriter.create<LLVM::CallOp>(loc, funcDecl,
@@ -792,8 +778,7 @@ struct AtomicFetchAddOpLowering
     LLVM::LLVMFuncOp funcDecl =
         getOrDefineFunction(moduleOp, loc, rewriter, funcName, funcType);
 
-    // dest: memref with symmetric memory space (already a pointer after type
-    // conversion)
+    // dest: memref with symmetric memory space (already a pointer after type conversion)
     Value destPtr = adaptor.getDest();
     // value: scalar value, may need casting
     Value value = adaptor.getValue();
@@ -864,8 +849,7 @@ struct CtxAtomicFetchAddOpLowering
 
     // ctx: context (already a pointer after type conversion)
     Value ctxPtr = adaptor.getCtx();
-    // dest: memref with symmetric memory space (already a pointer after type
-    // conversion)
+    // dest: memref with symmetric memory space (already a pointer after type conversion)
     Value destPtr = adaptor.getDest();
     // value: scalar value, may need casting
     Value value = adaptor.getValue();
@@ -929,8 +913,7 @@ struct AtomicAddOpLowering
     LLVM::LLVMFuncOp funcDecl =
         getOrDefineFunction(moduleOp, loc, rewriter, funcName, funcType);
 
-    // dest: memref with symmetric memory space (already a pointer after type
-    // conversion)
+    // dest: memref with symmetric memory space (already a pointer after type conversion)
     Value destPtr = adaptor.getDest();
     // value: scalar value, may need casting
     Value value = adaptor.getValue();
@@ -988,8 +971,7 @@ struct CtxAtomicAddOpLowering
 
     // ctx: context (already a pointer after type conversion)
     Value ctxPtr = adaptor.getCtx();
-    // dest: memref with symmetric memory space (already a pointer after type
-    // conversion)
+    // dest: memref with symmetric memory space (already a pointer after type conversion)
     Value destPtr = adaptor.getDest();
     // value: scalar value, may need casting
     Value value = adaptor.getValue();
@@ -1047,8 +1029,7 @@ struct AtomicFetchAndOpLowering
     LLVM::LLVMFuncOp funcDecl =
         getOrDefineFunction(moduleOp, loc, rewriter, funcName, funcType);
 
-    // dest: memref with symmetric memory space (already a pointer after type
-    // conversion)
+    // dest: memref with symmetric memory space (already a pointer after type conversion)
     Value destPtr = adaptor.getDest();
     // value: scalar value, may need casting
     Value value = adaptor.getValue();
@@ -1119,8 +1100,7 @@ struct CtxAtomicFetchAndOpLowering
 
     // ctx: context (already a pointer after type conversion)
     Value ctxPtr = adaptor.getCtx();
-    // dest: memref with symmetric memory space (already a pointer after type
-    // conversion)
+    // dest: memref with symmetric memory space (already a pointer after type conversion)
     Value destPtr = adaptor.getDest();
     // value: scalar value, may need casting
     Value value = adaptor.getValue();
@@ -1186,8 +1166,7 @@ struct AtomicFetchOrOpLowering
     LLVM::LLVMFuncOp funcDecl =
         getOrDefineFunction(moduleOp, loc, rewriter, funcName, funcType);
 
-    // dest: memref with symmetric memory space (already a pointer after type
-    // conversion)
+    // dest: memref with symmetric memory space (already a pointer after type conversion)
     Value destPtr = adaptor.getDest();
     // value: scalar value, may need casting
     Value value = adaptor.getValue();
@@ -1258,8 +1237,7 @@ struct CtxAtomicFetchOrOpLowering
 
     // ctx: context (already a pointer after type conversion)
     Value ctxPtr = adaptor.getCtx();
-    // dest: memref with symmetric memory space (already a pointer after type
-    // conversion)
+    // dest: memref with symmetric memory space (already a pointer after type conversion)
     Value destPtr = adaptor.getDest();
     // value: scalar value, may need casting
     Value value = adaptor.getValue();
@@ -1323,8 +1301,7 @@ struct AtomicOrOpLowering
     LLVM::LLVMFuncOp funcDecl =
         getOrDefineFunction(moduleOp, loc, rewriter, funcName, funcType);
 
-    // dest: memref with symmetric memory space (already a pointer after type
-    // conversion)
+    // dest: memref with symmetric memory space (already a pointer after type conversion)
     Value destPtr = adaptor.getDest();
     // value: scalar value, may need casting
     Value value = adaptor.getValue();
@@ -1381,8 +1358,7 @@ struct CtxAtomicOrOpLowering
 
     // ctx: context (already a pointer after type conversion)
     Value ctxPtr = adaptor.getCtx();
-    // dest: memref with symmetric memory space (already a pointer after type
-    // conversion)
+    // dest: memref with symmetric memory space (already a pointer after type conversion)
     Value destPtr = adaptor.getDest();
     // value: scalar value, may need casting
     Value value = adaptor.getValue();
@@ -1440,8 +1416,7 @@ struct AtomicFetchXorOpLowering
     LLVM::LLVMFuncOp funcDecl =
         getOrDefineFunction(moduleOp, loc, rewriter, funcName, funcType);
 
-    // dest: memref with symmetric memory space (already a pointer after type
-    // conversion)
+    // dest: memref with symmetric memory space (already a pointer after type conversion)
     Value destPtr = adaptor.getDest();
     // value: scalar value, may need casting
     Value value = adaptor.getValue();
@@ -1512,8 +1487,7 @@ struct CtxAtomicFetchXorOpLowering
 
     // ctx: context (already a pointer after type conversion)
     Value ctxPtr = adaptor.getCtx();
-    // dest: memref with symmetric memory space (already a pointer after type
-    // conversion)
+    // dest: memref with symmetric memory space (already a pointer after type conversion)
     Value destPtr = adaptor.getDest();
     // value: scalar value, may need casting
     Value value = adaptor.getValue();
@@ -1577,8 +1551,7 @@ struct AtomicXorOpLowering
     LLVM::LLVMFuncOp funcDecl =
         getOrDefineFunction(moduleOp, loc, rewriter, funcName, funcType);
 
-    // dest: memref with symmetric memory space (already a pointer after type
-    // conversion)
+    // dest: memref with symmetric memory space (already a pointer after type conversion)
     Value destPtr = adaptor.getDest();
     // value: scalar value, may need casting
     Value value = adaptor.getValue();
@@ -1636,8 +1609,7 @@ struct CtxAtomicXorOpLowering
 
     // ctx: context (already a pointer after type conversion)
     Value ctxPtr = adaptor.getCtx();
-    // dest: memref with symmetric memory space (already a pointer after type
-    // conversion)
+    // dest: memref with symmetric memory space (already a pointer after type conversion)
     Value destPtr = adaptor.getDest();
     // value: scalar value, may need casting
     Value value = adaptor.getValue();
@@ -1687,8 +1659,7 @@ struct AtomicFetchNbiOpLowering
 
     // fetch: local buffer (extract pointer from memref descriptor)
     Value fetchPtr = adaptor.getFetch();
-    // source: memref with symmetric memory space (already a pointer after type
-    // conversion)
+    // source: memref with symmetric memory space (already a pointer after type conversion)
     Value sourcePtr = adaptor.getSource();
 
     rewriter.create<LLVM::CallOp>(
@@ -1732,8 +1703,7 @@ struct CtxAtomicFetchNbiOpLowering
     Value ctxPtr = adaptor.getCtx();
     // fetch: local buffer (extract pointer from memref descriptor)
     Value fetchPtr = adaptor.getFetch();
-    // source: memref with symmetric memory space (already a pointer after type
-    // conversion)
+    // source: memref with symmetric memory space (already a pointer after type conversion)
     Value sourcePtr = adaptor.getSource();
 
     rewriter.create<LLVM::CallOp>(
@@ -1787,8 +1757,7 @@ struct AtomicCompareSwapNbiOpLowering
 
     // fetch: local buffer (already converted to pointer)
     Value fetchPtr = adaptor.getFetch();
-    // dest: memref with symmetric memory space (already a pointer after type
-    // conversion)
+    // dest: memref with symmetric memory space (already a pointer after type conversion)
     Value destPtr = adaptor.getDest();
     // cond: scalar value, may need casting
     Value cond = adaptor.getCond();
@@ -1862,8 +1831,7 @@ struct CtxAtomicCompareSwapNbiOpLowering
     Value ctxPtr = adaptor.getCtx();
     // fetch: local buffer (already converted to pointer)
     Value fetchPtr = adaptor.getFetch();
-    // dest: memref with symmetric memory space (already a pointer after type
-    // conversion)
+    // dest: memref with symmetric memory space (already a pointer after type conversion)
     Value destPtr = adaptor.getDest();
     // cond: scalar value, may need casting
     Value cond = adaptor.getCond();
@@ -1929,8 +1897,7 @@ struct AtomicSwapNbiOpLowering
 
     // fetch: local buffer (already converted to pointer)
     Value fetchPtr = adaptor.getFetch();
-    // dest: memref with symmetric memory space (already a pointer after type
-    // conversion)
+    // dest: memref with symmetric memory space (already a pointer after type conversion)
     Value destPtr = adaptor.getDest();
     // value: scalar value, may need casting
     Value value = adaptor.getValue();
@@ -1991,8 +1958,7 @@ struct CtxAtomicSwapNbiOpLowering
     Value ctxPtr = adaptor.getCtx();
     // fetch: local buffer (already converted to pointer)
     Value fetchPtr = adaptor.getFetch();
-    // dest: memref with symmetric memory space (already a pointer after type
-    // conversion)
+    // dest: memref with symmetric memory space (already a pointer after type conversion)
     Value destPtr = adaptor.getDest();
     // value: scalar value, may need casting
     Value value = adaptor.getValue();
@@ -2043,8 +2009,7 @@ struct AtomicFetchIncNbiOpLowering
 
     // fetch: local buffer (already converted to pointer)
     Value fetchPtr = adaptor.getFetch();
-    // dest: memref with symmetric memory space (already a pointer after type
-    // conversion)
+    // dest: memref with symmetric memory space (already a pointer after type conversion)
     Value destPtr = adaptor.getDest();
 
     rewriter.create<LLVM::CallOp>(
@@ -2088,8 +2053,7 @@ struct CtxAtomicFetchIncNbiOpLowering
     Value ctxPtr = adaptor.getCtx();
     // fetch: local buffer (already converted to pointer)
     Value fetchPtr = adaptor.getFetch();
-    // dest: memref with symmetric memory space (already a pointer after type
-    // conversion)
+    // dest: memref with symmetric memory space (already a pointer after type conversion)
     Value destPtr = adaptor.getDest();
 
     rewriter.create<LLVM::CallOp>(
@@ -2139,8 +2103,7 @@ struct AtomicFetchAddNbiOpLowering
 
     // fetch: local buffer (already converted to pointer)
     Value fetchPtr = adaptor.getFetch();
-    // dest: memref with symmetric memory space (already a pointer after type
-    // conversion)
+    // dest: memref with symmetric memory space (already a pointer after type conversion)
     Value destPtr = adaptor.getDest();
     // value: scalar value, may need casting
     Value value = adaptor.getValue();
@@ -2201,8 +2164,7 @@ struct CtxAtomicFetchAddNbiOpLowering
     Value ctxPtr = adaptor.getCtx();
     // fetch: local buffer (already converted to pointer)
     Value fetchPtr = adaptor.getFetch();
-    // dest: memref with symmetric memory space (already a pointer after type
-    // conversion)
+    // dest: memref with symmetric memory space (already a pointer after type conversion)
     Value destPtr = adaptor.getDest();
     // value: scalar value, may need casting
     Value value = adaptor.getValue();
@@ -2262,8 +2224,7 @@ struct AtomicFetchAndNbiOpLowering
 
     // fetch: local buffer (already converted to pointer)
     Value fetchPtr = adaptor.getFetch();
-    // dest: memref with symmetric memory space (already a pointer after type
-    // conversion)
+    // dest: memref with symmetric memory space (already a pointer after type conversion)
     Value destPtr = adaptor.getDest();
     // value: scalar value, may need casting
     Value value = adaptor.getValue();
@@ -2324,8 +2285,7 @@ struct CtxAtomicFetchAndNbiOpLowering
     Value ctxPtr = adaptor.getCtx();
     // fetch: local buffer (already converted to pointer)
     Value fetchPtr = adaptor.getFetch();
-    // dest: memref with symmetric memory space (already a pointer after type
-    // conversion)
+    // dest: memref with symmetric memory space (already a pointer after type conversion)
     Value destPtr = adaptor.getDest();
     // value: scalar value, may need casting
     Value value = adaptor.getValue();
@@ -2385,8 +2345,7 @@ struct AtomicFetchOrNbiOpLowering
 
     // fetch: local buffer (already converted to pointer)
     Value fetchPtr = adaptor.getFetch();
-    // dest: memref with symmetric memory space (already a pointer after type
-    // conversion)
+    // dest: memref with symmetric memory space (already a pointer after type conversion)
     Value destPtr = adaptor.getDest();
     // value: scalar value, may need casting
     Value value = adaptor.getValue();
@@ -2447,8 +2406,7 @@ struct CtxAtomicFetchOrNbiOpLowering
     Value ctxPtr = adaptor.getCtx();
     // fetch: local buffer (already converted to pointer)
     Value fetchPtr = adaptor.getFetch();
-    // dest: memref with symmetric memory space (already a pointer after type
-    // conversion)
+    // dest: memref with symmetric memory space (already a pointer after type conversion)
     Value destPtr = adaptor.getDest();
     // value: scalar value, may need casting
     Value value = adaptor.getValue();
@@ -2508,8 +2466,7 @@ struct AtomicFetchXorNbiOpLowering
 
     // fetch: local buffer (already converted to pointer)
     Value fetchPtr = adaptor.getFetch();
-    // dest: memref with symmetric memory space (already a pointer after type
-    // conversion)
+    // dest: memref with symmetric memory space (already a pointer after type conversion)
     Value destPtr = adaptor.getDest();
     // value: scalar value, may need casting
     Value value = adaptor.getValue();
@@ -2570,8 +2527,7 @@ struct CtxAtomicFetchXorNbiOpLowering
     Value ctxPtr = adaptor.getCtx();
     // fetch: local buffer (already converted to pointer)
     Value fetchPtr = adaptor.getFetch();
-    // dest: memref with symmetric memory space (already a pointer after type
-    // conversion)
+    // dest: memref with symmetric memory space (already a pointer after type conversion)
     Value destPtr = adaptor.getDest();
     // value: scalar value, may need casting
     Value value = adaptor.getValue();

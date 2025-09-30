@@ -6,55 +6,69 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "mlir/Conversion/MemRefToLLVM/MemRefToLLVM.h"
 #include "mlir/Conversion/OpenSHMEMToLLVM/OpenSHMEMToLLVM.h"
-#include "AtomicOpsToLLVM.h"
-#include "CollectiveOpsToLLVM.h"
-#include "ContextOpsToLLVM.h"
-#include "MemoryOpsToLLVM.h"
+#include "mlir/Dialect/MemRef/IR/MemRef.h"
+#include "mlir/IR/BuiltinTypes.h"
+#include "mlir/IR/TypeUtilities.h"
+#include "mlir/Support/LLVM.h"
+#include "mlir/Target/LLVMIR/TypeToLLVM.h"
+#include "mlir/Transforms/DialectConversion.h"
+#include "llvm/ADT/TypeSwitch.h"
+#include "llvm/Support/Casting.h"
 #include "OpenSHMEMConversionUtils.h"
-#include "Pt2ptSyncOpsToLLVM.h"
-#include "RMAOpsToLLVM.h"
 #include "SetupOpsToLLVM.h"
-#include "SyncOpsToLLVM.h"
+#include "MemoryOpsToLLVM.h"
+#include "RMAOpsToLLVM.h"
+#include "CollectiveOpsToLLVM.h"
 #include "TeamOpsToLLVM.h"
+#include "ContextOpsToLLVM.h"
+#include "AtomicOpsToLLVM.h"
+#include "SyncOpsToLLVM.h"
+#include "Pt2ptSyncOpsToLLVM.h"
 #include "mlir/Conversion/ConvertToLLVM/ToLLVMInterface.h"
 #include "mlir/Conversion/LLVMCommon/ConversionTarget.h"
+#include "mlir/Pass/Pass.h"
 #include "mlir/Conversion/LLVMCommon/MemRefBuilder.h"
 #include "mlir/Conversion/LLVMCommon/Pattern.h"
 #include "mlir/Conversion/MemRefToLLVM/MemRefToLLVM.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/LLVMIR/LLVMTypes.h"
-#include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialect/OpenSHMEM/IR/OpenSHMEM.h"
-#include "mlir/IR/BuiltinTypes.h"
-#include "mlir/IR/TypeUtilities.h"
 #include "mlir/IR/Types.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Support/LLVM.h"
-#include "mlir/Target/LLVMIR/TypeToLLVM.h"
 #include "mlir/Transforms/DialectConversion.h"
-#include "llvm/ADT/TypeSwitch.h"
-#include "llvm/Support/Casting.h"
 #include <memory>
 
 namespace mlir {
 #define GEN_PASS_DEF_CONVERTOPENSHMEMTOLLVMPASS
-#include "mlir/Conversion/OpenSHMEMToLLVM/OpenSHMEMConvertPasses.h.inc"
+#include "mlir/Conversion/Passes.h.inc"
 } // namespace mlir
 
 using namespace mlir;
 using namespace mlir::openshmem;
 
-namespace {} // namespace
-
 //===----------------------------------------------------------------------===//
 // Pass and conversion setup
 //===----------------------------------------------------------------------===//
 
-struct ConvertOpenSHMEMToLLVMPass
-    : public impl::ConvertOpenSHMEMToLLVMPassBase<ConvertOpenSHMEMToLLVMPass> {
-  using Base::Base;
+struct ConvertOpenSHMEMToLLVMPass : public OperationPass<ModuleOp> {
+  ConvertOpenSHMEMToLLVMPass() : OperationPass(TypeID::get<ConvertOpenSHMEMToLLVMPass>()) {}
+
+  MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(ConvertOpenSHMEMToLLVMPass)
+
+  StringRef getArgument() const final { return "convert-openshmem-to-llvm"; }
+  StringRef getDescription() const final { 
+    return "Convert OpenSHMEM dialect to LLVM dialect"; 
+  }
+
+  StringRef getName() const override { return "ConvertOpenSHMEMToLLVMPass"; }
+
+  std::unique_ptr<Pass> clonePass() const override {
+    return std::make_unique<ConvertOpenSHMEMToLLVMPass>(*this);
+  }
 
   void getDependentDialects(DialectRegistry &registry) const override {
     registry.insert<LLVM::LLVMDialect, openshmem::OpenSHMEMDialect>();
@@ -107,22 +121,19 @@ struct MemRefAllocOpLowering : public ConvertOpToLLVMPattern<memref::AllocOp> {
                   ConversionPatternRewriter &rewriter) const override {
     Location loc = op.getLoc();
     Type ptrType = LLVM::LLVMPointerType::get(rewriter.getContext());
-
-    // For our pointer-based approach, we just allocate memory and return a
-    // pointer This is a simplified approach that works with OpenSHMEM
-    // operations
-    Value size = rewriter.create<LLVM::ConstantOp>(
-        loc, rewriter.getI64Type(),
-        rewriter.getI64IntegerAttr(4)); // Assume 4 bytes for now
+    
+    // For our pointer-based approach, we just allocate memory and return a pointer
+    // This is a simplified approach that works with OpenSHMEM operations
+    Value size = rewriter.create<LLVM::ConstantOp>(loc, rewriter.getI64Type(), 
+                                                   rewriter.getI64IntegerAttr(4)); // Assume 4 bytes for now
     Value alloc = rewriter.create<LLVM::AllocaOp>(loc, ptrType, ptrType, size);
-
+    
     rewriter.replaceOp(op, alloc);
     return success();
   }
 };
 
-struct MemRefDeallocOpLowering
-    : public ConvertOpToLLVMPattern<memref::DeallocOp> {
+struct MemRefDeallocOpLowering : public ConvertOpToLLVMPattern<memref::DeallocOp> {
   using ConvertOpToLLVMPattern::ConvertOpToLLVMPattern;
 
   LogicalResult
@@ -148,7 +159,7 @@ void openshmem::populateOpenSHMEMToLLVMConversionPatterns(
   // Add conversion for memref types
   converter.addConversion([](MemRefType type) -> Type {
     // Check if this is a memref with symmetric memory space
-    if (type.getMemorySpace() &&
+    if (type.getMemorySpace() && 
         llvm::isa<openshmem::SymmetricMemorySpaceAttr>(type.getMemorySpace())) {
       // For symmetric memref types, convert to LLVM pointer type
       // The element type information is lost, but this matches the original
@@ -170,8 +181,7 @@ void openshmem::populateOpenSHMEMToLLVMConversionPatterns(
     return LLVM::LLVMPointerType::get(type.getContext());
   });
 
-  // Add custom memref-to-LLVM conversion patterns that work with our
-  // pointer-based approach
+  // Add custom memref-to-LLVM conversion patterns that work with our pointer-based approach
   patterns.add<MemRefAllocOpLowering>(converter);
   patterns.add<MemRefDeallocOpLowering>(converter);
 
@@ -185,6 +195,14 @@ void openshmem::populateOpenSHMEMToLLVMConversionPatterns(
   populateAtomicOpsToLLVMConversionPatterns(converter, patterns);
   populateSyncOpsToLLVMConversionPatterns(converter, patterns);
   populatePt2ptSyncOpsToLLVMConversionPatterns(converter, patterns);
+}
+
+//===----------------------------------------------------------------------===//
+// Pass factory function
+//===----------------------------------------------------------------------===//
+
+std::unique_ptr<Pass> mlir::createConvertOpenSHMEMToLLVMPass() {
+  return std::make_unique<ConvertOpenSHMEMToLLVMPass>();
 }
 
 void openshmem::registerConvertOpenSHMEMToLLVMInterface(

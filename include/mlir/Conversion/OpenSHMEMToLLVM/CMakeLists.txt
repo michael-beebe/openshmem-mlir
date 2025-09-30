@@ -1,4 +1,1 @@
-set(LLVM_TARGET_DEFINITIONS Passes.td)
-mlir_tablegen(OpenSHMEMConvertPasses.h.inc -gen-pass-decls)
-add_public_tablegen_target(MLIROpenSHMEMConvertPassesIncGen)
-
+# This directory only contains headers, no CMakeLists.txt needed for header-only directories in out-of-tree builds

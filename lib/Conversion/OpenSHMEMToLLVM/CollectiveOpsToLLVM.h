@@ -1,4 +1,4 @@
-//===- CollectiveOpsToLLVM.h - Collective Ops Conversion -------*- C++ -*-===//
+//===- CollectiveOpsToLLVM.h - Collective operations conversion patterns -*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -6,17 +6,20 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef OPENSHMEM_LIB_CONVERSION_COLLECTIVEOPSTOLLVM_H
-#define OPENSHMEM_LIB_CONVERSION_COLLECTIVEOPSTOLLVM_H
+#ifndef MLIR_LIB_CONVERSION_OPENSHMEMTOLLVM_COLLECTIVEOPSTOLLVM_H
+#define MLIR_LIB_CONVERSION_OPENSHMEMTOLLVM_COLLECTIVEOPSTOLLVM_H
 
 namespace mlir {
 class LLVMTypeConverter;
 class RewritePatternSet;
 
 namespace openshmem {
+
+/// Populate conversion patterns for OpenSHMEM Collective operations.
 void populateCollectiveOpsToLLVMConversionPatterns(LLVMTypeConverter &converter,
                                                    RewritePatternSet &patterns);
+
 } // namespace openshmem
 } // namespace mlir
 
-#endif // OPENSHMEM_LIB_CONVERSION_COLLECTIVEOPSTOLLVM_H
+#endif // MLIR_LIB_CONVERSION_OPENSHMEMTOLLVM_COLLECTIVEOPSTOLLVM_H 

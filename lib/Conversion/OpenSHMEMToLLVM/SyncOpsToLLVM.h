@@ -1,4 +1,4 @@
-//===- SyncOpsToLLVM.h - Sync Ops Conversion -------------------*- C++ -*-===//
+//===- SyncOpsToLLVM.h - Sync operations conversion patterns ----*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -6,17 +6,20 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef OPENSHMEM_LIB_CONVERSION_SYNCOPSTOLLVM_H
-#define OPENSHMEM_LIB_CONVERSION_SYNCOPSTOLLVM_H
+#ifndef MLIR_LIB_CONVERSION_OPENSHMEMTOLLVM_SYNCOPSTOLLVM_H
+#define MLIR_LIB_CONVERSION_OPENSHMEMTOLLVM_SYNCOPSTOLLVM_H
 
 namespace mlir {
 class LLVMTypeConverter;
 class RewritePatternSet;
 
 namespace openshmem {
+
+/// Populate conversion patterns for OpenSHMEM Synchronization operations.
 void populateSyncOpsToLLVMConversionPatterns(LLVMTypeConverter &converter,
                                              RewritePatternSet &patterns);
+
 } // namespace openshmem
 } // namespace mlir
 
-#endif // OPENSHMEM_LIB_CONVERSION_SYNCOPSTOLLVM_H
+#endif // MLIR_LIB_CONVERSION_OPENSHMEMTOLLVM_SYNCOPSTOLLVM_H

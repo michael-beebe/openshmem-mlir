@@ -1,4 +1,4 @@
 set(LLVM_TARGET_DEFINITIONS Passes.td)
 mlir_tablegen(Passes.h.inc -gen-pass-decls -name OpenSHMEM)
-add_public_tablegen_target(MLIROpenSHMEMPassIncGen)
+add_public_tablegen_target(MLIROpenSHMEMTransformsIncGen)
 

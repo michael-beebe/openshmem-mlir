@@ -1,5 +1,4 @@
-//===- OpenSHMEMToLLVM.h - OpenSHMEM to LLVM conversion ----------*- C++
-//-*-===//
+//===- OpenSHMEMToLLVM.h - OpenSHMEM to LLVM conversion --------*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -7,31 +6,31 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef MLIR_CONVERSION_OPENSHMEMTOLLVM_OPENSHMEMTOLLVM_H
-#define MLIR_CONVERSION_OPENSHMEMTOLLVM_OPENSHMEMTOLLVM_H
+#ifndef MLIR_CONVERSION_OPENSHMEMTOLLVM_H_
+#define MLIR_CONVERSION_OPENSHMEMTOLLVM_H_
 
 #include <memory>
 
 namespace mlir {
-class Pass;
+
 class LLVMTypeConverter;
 class RewritePatternSet;
+class Pass;
+class DialectRegistry;
 
-// Local generated pass decls for this project
-#define GEN_PASS_DECL_CONVERTOPENSHMEMTOLLVMPASS
-#include "mlir/Conversion/OpenSHMEMToLLVM/OpenSHMEMConvertPasses.h.inc"
+/// Create a pass to convert OpenSHMEM dialect to LLVM.
+std::unique_ptr<Pass> createConvertOpenSHMEMToLLVMPass();
 
 namespace openshmem {
-// Converter population with type converter
+
+/// Populate the given list with patterns that convert from OpenSHMEM to LLVM.
 void populateOpenSHMEMToLLVMConversionPatterns(LLVMTypeConverter &converter,
                                                RewritePatternSet &patterns);
 
-// Optional registry hook (stub for now)
-void registerConvertOpenSHMEMToLLVMInterface(class DialectRegistry &registry);
+/// Register the OpenSHMEM to LLVM conversion interface.
+void registerConvertOpenSHMEMToLLVMInterface(DialectRegistry &registry);
 
-// Pass factory (keep exported for tools/tests)
-std::unique_ptr<Pass> createConvertOpenSHMEMToLLVMPass();
 } // namespace openshmem
 } // namespace mlir
 
-#endif // MLIR_CONVERSION_OPENSHMEMTOLLVM_OPENSHMEMTOLLVM_H
+#endif // MLIR_CONVERSION_OPENSHMEMTOLLVM_H_ 
