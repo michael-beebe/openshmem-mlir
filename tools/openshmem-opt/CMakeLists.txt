@@ -36,7 +36,7 @@ target_link_libraries(openshmem-opt
 target_link_libraries(openshmem-opt
   PRIVATE
     MLIROpenSHMEMToLLVM
-    MLIROpenSHMEM
+    MLIROpenSHMEMDialect
 )
 
 # Make sure the include path contains generated headers

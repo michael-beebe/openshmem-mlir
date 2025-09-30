@@ -28,5 +28,5 @@ set(MLIR_TABLEGEN_FLAGS "${MLIR_TABLEGEN_FLAGS} \
 
 add_subdirectory(include)
 add_subdirectory(lib)
-# add_subdirectory(test) # enable once tests are added
+add_subdirectory(tools)
 
