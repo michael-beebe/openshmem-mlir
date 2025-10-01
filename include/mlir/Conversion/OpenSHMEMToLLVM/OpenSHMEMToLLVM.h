@@ -33,4 +33,4 @@ void registerConvertOpenSHMEMToLLVMInterface(DialectRegistry &registry);
 } // namespace openshmem
 } // namespace mlir
 
-#endif // MLIR_CONVERSION_OPENSHMEMTOLLVM_H_ 
+#endif // MLIR_CONVERSION_OPENSHMEMTOLLVM_H_

@@ -80,8 +80,8 @@ struct AlltoallOpLowering
     LLVM::LLVMFuncOp funcDecl =
         getOrDefineFunction(moduleOp, loc, rewriter, funcName, funcType);
 
-    // dest and source are already pointers (memref with symmetric memory space converts to
-    // pointer)
+    // dest and source are already pointers (memref with symmetric memory space
+    // converts to pointer)
     Value destPtr = adaptor.getDest();
     Value sourcePtr = adaptor.getSource();
 
@@ -133,8 +133,8 @@ struct AlltoallsOpLowering
     LLVM::LLVMFuncOp funcDecl =
         getOrDefineFunction(moduleOp, loc, rewriter, funcName, funcType);
 
-    // dest and source are already pointers (memref with symmetric memory space converts to
-    // pointer)
+    // dest and source are already pointers (memref with symmetric memory space
+    // converts to pointer)
     Value destPtr = adaptor.getDest();
     Value sourcePtr = adaptor.getSource();
     Value dst = adaptor.getDst();
@@ -189,8 +189,8 @@ struct BroadcastOpLowering
     LLVM::LLVMFuncOp funcDecl =
         getOrDefineFunction(moduleOp, loc, rewriter, funcName, funcType);
 
-    // dest and source are already pointers (memref with symmetric memory space converts to
-    // pointer)
+    // dest and source are already pointers (memref with symmetric memory space
+    // converts to pointer)
     Value destPtr = adaptor.getDest();
     Value sourcePtr = adaptor.getSource();
     Value nelems = adaptor.getNelems();
@@ -241,8 +241,8 @@ struct CollectOpLowering : public ConvertOpToLLVMPattern<openshmem::CollectOp> {
     LLVM::LLVMFuncOp funcDecl =
         getOrDefineFunction(moduleOp, loc, rewriter, funcName, funcType);
 
-    // dest and source are already pointers (memref with symmetric memory space converts to
-    // pointer)
+    // dest and source are already pointers (memref with symmetric memory space
+    // converts to pointer)
     Value destPtr = adaptor.getDest();
     Value sourcePtr = adaptor.getSource();
     Value nelems = adaptor.getNelems();
@@ -293,8 +293,8 @@ struct FCollectOpLowering
     LLVM::LLVMFuncOp funcDecl =
         getOrDefineFunction(moduleOp, loc, rewriter, funcName, funcType);
 
-    // dest and source are already pointers (memref with symmetric memory space converts to
-    // pointer)
+    // dest and source are already pointers (memref with symmetric memory space
+    // converts to pointer)
     Value destPtr = adaptor.getDest();
     Value sourcePtr = adaptor.getSource();
     Value nelems = adaptor.getNelems();
@@ -332,8 +332,8 @@ struct AlltoallmemOpLowering
     LLVM::LLVMFuncOp funcDecl = getOrDefineFunction(
         moduleOp, loc, rewriter, "shmem_alltoallmem", funcType);
 
-    // dest and source are already pointers (memref with symmetric memory space converts to
-    // pointer)
+    // dest and source are already pointers (memref with symmetric memory space
+    // converts to pointer)
     Value destPtr = adaptor.getDest();
     Value sourcePtr = adaptor.getSource();
 
@@ -370,8 +370,8 @@ struct AlltoallsmemOpLowering
     LLVM::LLVMFuncOp funcDecl = getOrDefineFunction(
         moduleOp, loc, rewriter, "shmem_alltoallsmem", funcType);
 
-    // dest and source are already pointers (memref with symmetric memory space converts to
-    // pointer)
+    // dest and source are already pointers (memref with symmetric memory space
+    // converts to pointer)
     Value destPtr = adaptor.getDest();
     Value sourcePtr = adaptor.getSource();
     Value dst = adaptor.getDst();
@@ -411,8 +411,8 @@ struct BroadcastmemOpLowering
     LLVM::LLVMFuncOp funcDecl = getOrDefineFunction(
         moduleOp, loc, rewriter, "shmem_broadcastmem", funcType);
 
-    // dest and source are already pointers (memref with symmetric memory space converts to
-    // pointer)
+    // dest and source are already pointers (memref with symmetric memory space
+    // converts to pointer)
     Value destPtr = adaptor.getDest();
     Value sourcePtr = adaptor.getSource();
     Value nelems = adaptor.getNelems();
@@ -450,8 +450,8 @@ struct CollectmemOpLowering
     LLVM::LLVMFuncOp funcDecl = getOrDefineFunction(
         moduleOp, loc, rewriter, "shmem_collectmem", funcType);
 
-    // dest and source are already pointers (memref with symmetric memory space converts to
-    // pointer)
+    // dest and source are already pointers (memref with symmetric memory space
+    // converts to pointer)
     Value destPtr = adaptor.getDest();
     Value sourcePtr = adaptor.getSource();
     Value nelems = adaptor.getNelems();
@@ -488,8 +488,8 @@ struct FCollectmemOpLowering
     LLVM::LLVMFuncOp funcDecl = getOrDefineFunction(
         moduleOp, loc, rewriter, "shmem_fcollectmem", funcType);
 
-    // dest and source are already pointers (memref with symmetric memory space converts to
-    // pointer)
+    // dest and source are already pointers (memref with symmetric memory space
+    // converts to pointer)
     Value destPtr = adaptor.getDest();
     Value sourcePtr = adaptor.getSource();
     Value nelems = adaptor.getNelems();
@@ -526,8 +526,8 @@ struct AndReduceOpLowering
     LLVM::LLVMFuncOp funcDecl = getOrDefineFunction(
         moduleOp, loc, rewriter, "shmem_and_reduce", funcType);
 
-    // dest and source are already pointers (memref with symmetric memory space converts to
-    // pointer)
+    // dest and source are already pointers (memref with symmetric memory space
+    // converts to pointer)
     Value destPtr = adaptor.getDest();
     Value sourcePtr = adaptor.getSource();
     Value nreduce = adaptor.getNreduce();
@@ -564,8 +564,8 @@ struct OrReduceOpLowering
     LLVM::LLVMFuncOp funcDecl = getOrDefineFunction(
         moduleOp, loc, rewriter, "shmem_or_reduce", funcType);
 
-    // dest and source are already pointers (memref with symmetric memory space converts to
-    // pointer)
+    // dest and source are already pointers (memref with symmetric memory space
+    // converts to pointer)
     Value destPtr = adaptor.getDest();
     Value sourcePtr = adaptor.getSource();
     Value nreduce = adaptor.getNreduce();
@@ -602,8 +602,8 @@ struct XorReduceOpLowering
     LLVM::LLVMFuncOp funcDecl = getOrDefineFunction(
         moduleOp, loc, rewriter, "shmem_xor_reduce", funcType);
 
-    // dest and source are already pointers (memref with symmetric memory space converts to
-    // pointer)
+    // dest and source are already pointers (memref with symmetric memory space
+    // converts to pointer)
     Value destPtr = adaptor.getDest();
     Value sourcePtr = adaptor.getSource();
     Value nreduce = adaptor.getNreduce();
@@ -640,8 +640,8 @@ struct MaxReduceOpLowering
     LLVM::LLVMFuncOp funcDecl = getOrDefineFunction(
         moduleOp, loc, rewriter, "shmem_max_reduce", funcType);
 
-    // dest and source are already pointers (memref with symmetric memory space converts to
-    // pointer)
+    // dest and source are already pointers (memref with symmetric memory space
+    // converts to pointer)
     Value destPtr = adaptor.getDest();
     Value sourcePtr = adaptor.getSource();
     Value nreduce = adaptor.getNreduce();
@@ -678,8 +678,8 @@ struct MinReduceOpLowering
     LLVM::LLVMFuncOp funcDecl = getOrDefineFunction(
         moduleOp, loc, rewriter, "shmem_min_reduce", funcType);
 
-    // dest and source are already pointers (memref with symmetric memory space converts to
-    // pointer)
+    // dest and source are already pointers (memref with symmetric memory space
+    // converts to pointer)
     Value destPtr = adaptor.getDest();
     Value sourcePtr = adaptor.getSource();
     Value nreduce = adaptor.getNreduce();
@@ -716,8 +716,8 @@ struct SumReduceOpLowering
     LLVM::LLVMFuncOp funcDecl = getOrDefineFunction(
         moduleOp, loc, rewriter, "shmem_sum_reduce", funcType);
 
-    // dest and source are already pointers (memref with symmetric memory space converts to
-    // pointer)
+    // dest and source are already pointers (memref with symmetric memory space
+    // converts to pointer)
     Value destPtr = adaptor.getDest();
     Value sourcePtr = adaptor.getSource();
     Value nreduce = adaptor.getNreduce();
@@ -754,8 +754,8 @@ struct ProdReduceOpLowering
     LLVM::LLVMFuncOp funcDecl = getOrDefineFunction(
         moduleOp, loc, rewriter, "shmem_prod_reduce", funcType);
 
-    // dest and source are already pointers (memref with symmetric memory space converts to
-    // pointer)
+    // dest and source are already pointers (memref with symmetric memory space
+    // converts to pointer)
     Value destPtr = adaptor.getDest();
     Value sourcePtr = adaptor.getSource();
     Value nreduce = adaptor.getNreduce();

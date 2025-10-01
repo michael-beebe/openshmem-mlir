@@ -9,4 +9,3 @@
 #include "mlir/Dialect/OpenSHMEM/Transforms/Passes.h"
 
 // Registration-only unit; implementations live in dedicated files.
-

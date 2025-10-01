@@ -95,8 +95,8 @@ struct BarrierOpLowering : public ConvertOpToLLVMPattern<openshmem::BarrierOp> {
     LLVM::LLVMFuncOp funcDecl =
         getOrDefineFunction(moduleOp, loc, rewriter, "shmem_barrier", funcType);
 
-    // The psync argument is already a pointer (memref with symmetric memory space converts to
-    // pointer)
+    // The psync argument is already a pointer (memref with symmetric memory
+    // space converts to pointer)
     Value psyncPtr = adaptor.getPsync();
 
     rewriter.create<LLVM::CallOp>(loc, funcDecl,

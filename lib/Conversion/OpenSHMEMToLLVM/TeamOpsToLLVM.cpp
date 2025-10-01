@@ -321,9 +321,9 @@ struct TeamSharedOpLowering
 
 void openshmem::populateTeamOpsToLLVMConversionPatterns(
     LLVMTypeConverter &converter, RewritePatternSet &patterns) {
-  patterns.add<TeamSplitStridedOpLowering, TeamSplit2dOpLowering,
-               TeamMyPeOpLowering, TeamNPesOpLowering, TeamSyncOpLowering,
-               TeamDestroyOpLowering, TeamWorldOpLowering,
-               TeamSharedOpLowering>(converter);
+  patterns
+      .add<TeamSplitStridedOpLowering, TeamSplit2dOpLowering,
+           TeamMyPeOpLowering, TeamNPesOpLowering, TeamSyncOpLowering,
+           TeamDestroyOpLowering, TeamWorldOpLowering, TeamSharedOpLowering>(
+          converter);
 }
- 

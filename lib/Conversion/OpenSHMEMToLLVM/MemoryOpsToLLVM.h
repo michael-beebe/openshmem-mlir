@@ -21,4 +21,4 @@ void populateMemoryOpsToLLVMConversionPatterns(LLVMTypeConverter &converter,
 } // namespace openshmem
 } // namespace mlir
 
-#endif // MLIR_LIB_CONVERSION_OPENSHMEMTOLLVM_MEMORYOPSTOLLVM_H 
+#endif // MLIR_LIB_CONVERSION_OPENSHMEMTOLLVM_MEMORYOPSTOLLVM_H

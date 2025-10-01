@@ -190,8 +190,9 @@ static unsigned getScalarTypeSizeInBytes(Type t) {
 struct OffsetOpLowering : public ConvertOpToLLVMPattern<openshmem::OffsetOp> {
   using ConvertOpToLLVMPattern::ConvertOpToLLVMPattern;
 
-  LogicalResult matchAndRewrite(openshmem::OffsetOp op, OpAdaptor adaptor,
-                                ConversionPatternRewriter &rewriter) const override {
+  LogicalResult
+  matchAndRewrite(openshmem::OffsetOp op, OpAdaptor adaptor,
+                  ConversionPatternRewriter &rewriter) const override {
     Location loc = op.getLoc();
     MLIRContext *ctx = rewriter.getContext();
 
@@ -204,7 +205,8 @@ struct OffsetOpLowering : public ConvertOpToLLVMPattern<openshmem::OffsetOp> {
     Type idxTy = getTypeConverter()->getIndexType();
     Value elemSizeConst = rewriter.create<LLVM::ConstantOp>(
         loc, idxTy, rewriter.getIntegerAttr(idxTy, elemSizeBytes));
-    Value byteOffset = rewriter.create<LLVM::MulOp>(loc, offElems, elemSizeConst);
+    Value byteOffset =
+        rewriter.create<LLVM::MulOp>(loc, offElems, elemSizeConst);
 
     auto i8Ty = IntegerType::get(ctx, 8);
     auto i8PtrTy = LLVM::LLVMPointerType::get(ctx);
@@ -229,4 +231,4 @@ void openshmem::populateMemoryOpsToLLVMConversionPatterns(
     LLVMTypeConverter &converter, RewritePatternSet &patterns) {
   patterns.add<MallocOpLowering, FreeOpLowering, ReallocOpLowering,
                AlignOpLowering, CallocOpLowering, OffsetOpLowering>(converter);
-} 
+}

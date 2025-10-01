@@ -23,4 +23,3 @@ void populateTeamOpsToLLVMConversionPatterns(LLVMTypeConverter &converter,
 } // namespace mlir
 
 #endif // MLIR_LIB_CONVERSION_OPENSHMEMTOLLVM_TEAMOPSTOLLVM_H
- 

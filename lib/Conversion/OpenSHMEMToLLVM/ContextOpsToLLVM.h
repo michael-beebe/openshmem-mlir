@@ -1,4 +1,5 @@
-//===- ContextOpsToLLVM.h - Context operations conversion patterns -*- C++ -*-===//
+//===- ContextOpsToLLVM.h - Context operations conversion patterns -*- C++
+//-*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -22,4 +23,4 @@ void populateContextOpsToLLVMConversionPatterns(LLVMTypeConverter &converter,
 } // namespace openshmem
 } // namespace mlir
 
-#endif // MLIR_LIB_CONVERSION_OPENSHMEMTOLLVM_CONTEXTOPSTOLLVM_H 
+#endif // MLIR_LIB_CONVERSION_OPENSHMEMTOLLVM_CONTEXTOPSTOLLVM_H

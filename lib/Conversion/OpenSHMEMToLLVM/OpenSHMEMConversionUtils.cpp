@@ -22,11 +22,10 @@ namespace openshmem {
 // Function declaration utilities
 //===----------------------------------------------------------------------===//
 
-LLVM::LLVMFuncOp getOrDefineFunction(ModuleOp &moduleOp,
-                                    const Location loc,
-                                    ConversionPatternRewriter &rewriter,
-                                    StringRef name,
-                                    LLVM::LLVMFunctionType type) {
+LLVM::LLVMFuncOp getOrDefineFunction(ModuleOp &moduleOp, const Location loc,
+                                     ConversionPatternRewriter &rewriter,
+                                     StringRef name,
+                                     LLVM::LLVMFunctionType type) {
   LLVM::LLVMFuncOp funcOp;
   if (!(funcOp = moduleOp.lookupSymbol<LLVM::LLVMFuncOp>(name))) {
     ConversionPatternRewriter::InsertionGuard guard(rewriter);
@@ -38,7 +37,7 @@ LLVM::LLVMFuncOp getOrDefineFunction(ModuleOp &moduleOp,
 }
 
 //===----------------------------------------------------------------------===//
-// Memory reference utilities  
+// Memory reference utilities
 //===----------------------------------------------------------------------===//
 
 Value getMemRefDataPtr(Location loc, ConversionPatternRewriter &rewriter,
@@ -47,8 +46,9 @@ Value getMemRefDataPtr(Location loc, ConversionPatternRewriter &rewriter,
   if (llvm::isa<LLVM::LLVMPointerType>(memref.getType())) {
     return memref;
   }
-  
-  // Otherwise, assume it's a MemRef descriptor (struct), extract the pointer (field 0)
+
+  // Otherwise, assume it's a MemRef descriptor (struct), extract the pointer
+  // (field 0)
   auto ptrType = LLVM::LLVMPointerType::get(rewriter.getContext());
   return rewriter.create<LLVM::ExtractValueOp>(loc, ptrType, memref, 0);
 }
@@ -56,7 +56,8 @@ Value getMemRefDataPtr(Location loc, ConversionPatternRewriter &rewriter,
 Type getSymmetricMemRefElementType(Value symmetricMemRef) {
   auto memRefType = llvm::dyn_cast<MemRefType>(symmetricMemRef.getType());
   if (!memRefType || !memRefType.getMemorySpace() ||
-      !llvm::isa<openshmem::SymmetricMemorySpaceAttr>(memRefType.getMemorySpace())) {
+      !llvm::isa<openshmem::SymmetricMemorySpaceAttr>(
+          memRefType.getMemorySpace())) {
     return nullptr;
   }
   return memRefType.getElementType();
@@ -68,7 +69,7 @@ Type getSymmetricMemRefElementType(Value symmetricMemRef) {
 
 std::string getTypedFunctionName(StringRef baseName, Type elementType) {
   std::string funcName = "shmem_";
-  
+
   // Map MLIR types to OpenSHMEM type names (not sizes!)
   // These must match the actual function names in the OpenSHMEM library
   if (elementType.isInteger(8)) {
@@ -94,17 +95,18 @@ std::string getTypedFunctionName(StringRef baseName, Type elementType) {
     funcName = "shmem_" + baseName.str();
     return funcName;
   }
-  
+
   funcName += baseName.str();
   return funcName;
 }
 
 std::string getSizedFunctionName(StringRef baseName, Type elementType) {
   std::string funcName = "shmem_";
-  
+
   // Map MLIR types to OpenSHMEM sized type names
-  // Used for pt2pt sync operations that require sized names (especially vectors)
-  // Note: OpenSHMEM only has int32 and int64 sized functions for sync operations
+  // Used for pt2pt sync operations that require sized names (especially
+  // vectors) Note: OpenSHMEM only has int32 and int64 sized functions for sync
+  // operations
   if (!elementType) {
     // If element type is null, fall back to int32
     funcName += "int32_";
@@ -118,14 +120,14 @@ std::string getSizedFunctionName(StringRef baseName, Type elementType) {
     // This includes most common cases
     funcName += "int32_";
   }
-  
+
   funcName += baseName.str();
   return funcName;
 }
 
 std::string getRMASizedFunctionName(StringRef baseName, Type elementType) {
   std::string funcName = "shmem_";
-  
+
   // Map MLIR types to OpenSHMEM RMA sized function names
   // These use the pattern: shmem_put32, shmem_put64, shmem_get32, etc.
   if (elementType.isInteger(8)) {
@@ -149,13 +151,14 @@ std::string getRMASizedFunctionName(StringRef baseName, Type elementType) {
     funcName = "shmem_" + baseName.str();
     return funcName;
   }
-  
+
   return funcName;
 }
 
-std::string getPt2ptSyncSizedFunctionName(StringRef baseName, Type cmpValueType) {
+std::string getPt2ptSyncSizedFunctionName(StringRef baseName,
+                                          Type cmpValueType) {
   std::string funcName = "shmem_";
-  
+
   // Map MLIR types to OpenSHMEM pt2pt sync sized function names
   // These use the pattern: shmem_wait_until32, shmem_wait_until64, etc.
   if (!cmpValueType) {
@@ -181,19 +184,20 @@ std::string getPt2ptSyncSizedFunctionName(StringRef baseName, Type cmpValueType)
     // For unsupported types, fall back to 32
     funcName += baseName.str() + "32";
   }
-  
+
   return funcName;
 }
 
 std::string getPt2ptSyncVectorFunctionName(StringRef baseName) {
   std::string funcName = "shmem_";
-  
+
   // Vector operations use simple naming without size suffixes
-  // These use the pattern: shmem_wait_until_all_vector, shmem_wait_until_any_vector, etc.
+  // These use the pattern: shmem_wait_until_all_vector,
+  // shmem_wait_until_any_vector, etc.
   funcName += baseName.str();
-  
+
   return funcName;
 }
 
 } // namespace openshmem
-} // namespace mlir 
+} // namespace mlir

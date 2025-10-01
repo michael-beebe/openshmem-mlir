@@ -8,11 +8,11 @@
 
 #include "mlir/Dialect/OpenSHMEM/IR/OpenSHMEM.h"
 #include "mlir/IR/Builders.h"
+#include "mlir/IR/BuiltinAttributes.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/DialectImplementation.h"
 #include "mlir/IR/OpImplementation.h"
 #include "mlir/IR/OperationSupport.h"
-#include "mlir/IR/BuiltinAttributes.h"
 
 using namespace mlir;
 using namespace mlir::openshmem;
@@ -36,7 +36,7 @@ LogicalResult openshmem::Region::verify() {
 // Atomic Operation Folding
 //===----------------------------------------------------------------------===//
 
-// Note: Atomic operations (atomic_add, atomic_inc, atomic_or, atomic_xor) 
+// Note: Atomic operations (atomic_add, atomic_inc, atomic_or, atomic_xor)
 // have ZeroResults trait, so they don't produce results to fold.
 // Folding is typically used for operations that produce values that can be
 // replaced with constants. For atomic operations, the optimization happens
