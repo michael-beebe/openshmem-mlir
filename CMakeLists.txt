@@ -16,9 +16,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Make headers visible to both C++ and mlir-tblgen, and add MLIR/LLVM include roots.
 include_directories(
   "${CMAKE_CURRENT_SOURCE_DIR}/include"
+  "${CMAKE_CURRENT_SOURCE_DIR}/cir/include"
   ${MLIR_INCLUDE_DIRS}
   ${LLVM_INCLUDE_DIRS}
   "${CMAKE_BINARY_DIR}/include"
+  "${CMAKE_BINARY_DIR}/cir/include"
 )
 
 set(MLIR_TABLEGEN_FLAGS "${MLIR_TABLEGEN_FLAGS} \
@@ -28,5 +30,6 @@ set(MLIR_TABLEGEN_FLAGS "${MLIR_TABLEGEN_FLAGS} \
 
 add_subdirectory(include)
 add_subdirectory(lib)
+add_subdirectory(cir)
 add_subdirectory(tools)
 

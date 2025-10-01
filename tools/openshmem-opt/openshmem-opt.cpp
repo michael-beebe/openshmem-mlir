@@ -1,5 +1,6 @@
 #include "mlir/Conversion/OpenSHMEMToLLVM/OpenSHMEMToLLVM.h"
 #include "mlir/Dialect/OpenSHMEM/IR/OpenSHMEM.h"
+#include "OpenSHMEMCIR/Passes.h"
 #include "mlir/InitAllDialects.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Pass/PassManager.h"
@@ -17,6 +18,9 @@ int main(int argc, char **argv) {
 
   // Register OpenSHMEM to LLVM conversion interface
   mlir::openshmem::registerConvertOpenSHMEMToLLVMInterface(registry);
+
+  // Register OpenSHMEM CIR passes
+  mlir::openshmem::cir::registerOpenSHMEMCIRPasses();
 
   // Register our OpenSHMEM conversion pass using global static
   static mlir::PassPipelineRegistration<> registerOpenSHMEMPass(

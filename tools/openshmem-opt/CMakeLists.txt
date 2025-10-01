@@ -37,12 +37,16 @@ target_link_libraries(openshmem-opt
   PRIVATE
     MLIROpenSHMEMToLLVM
     MLIROpenSHMEMDialect
+    MLIROpenSHMEMCIRPasses
+    MLIROpenSHMEMCIRRewriters
 )
 
 # Make sure the include path contains generated headers
 target_include_directories(openshmem-opt PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/../../include
+  ${CMAKE_CURRENT_SOURCE_DIR}/../../cir/include
   ${CMAKE_CURRENT_BINARY_DIR}/../../include
+  ${CMAKE_CURRENT_BINARY_DIR}/../../cir/include
 )
 
 # Export symbols for plugin capability if needed
