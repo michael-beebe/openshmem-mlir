@@ -189,9 +189,9 @@ struct CtxPutNbiOpLowering
     }
 
     // Generate function name based on type
-    std::string funcName = getRMASizedFunctionName("put_nbi", elementType);
+    std::string funcName = getRMASizedFunctionName("ctx_put_nbi", elementType);
 
-    // void shmem_put_nbi(shmem_ctx_t ctx, TYPE *dest, const TYPE *source,
+    // void shmem_ctx_put_nbi(shmem_ctx_t ctx, TYPE *dest, const TYPE *source,
     // size_t nelems, int pe)
     Type sizeType = getTypeConverter()->getIndexType();
     auto funcType = LLVM::LLVMFunctionType::get(

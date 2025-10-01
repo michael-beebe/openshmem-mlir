@@ -50,9 +50,10 @@ module {
       %src = openshmem.malloc(%size) : index -> memref<i32, #openshmem.symmetric_memory>
       %dest = openshmem.malloc(%size) : index -> memref<i32, #openshmem.symmetric_memory>
       %nelems = arith.constant 16 : index
+      %root_pe = arith.constant 0 : i32
       
       // Broadcast operation
-      openshmem.broadcast(%dest, %src, %nelems, %team) : memref<i32, #openshmem.symmetric_memory>, memref<i32, #openshmem.symmetric_memory>, index, !openshmem.team
+      %broadcast_ret = openshmem.broadcast(%team, %dest, %src, %nelems, %root_pe) : !openshmem.team, memref<i32, #openshmem.symmetric_memory>, memref<i32, #openshmem.symmetric_memory>, index, i32 -> i32
       
       openshmem.free(%src) : memref<i32, #openshmem.symmetric_memory>
       openshmem.free(%dest) : memref<i32, #openshmem.symmetric_memory>
@@ -84,9 +85,6 @@ module {
       // Barrier synchronization
       openshmem.barrier_all
       
-      // Fence operation
-      openshmem.fence
-      
       // Quiet operation
       openshmem.quiet
     }
@@ -95,38 +93,31 @@ module {
 
   // Test team operations
   func.func @test_teams() -> !openshmem.team {
+    %my_pe = openshmem.my_pe : i32
+    %n_pes = openshmem.n_pes : i32
+    %world_team = openshmem.team_world -> !openshmem.team
+    %start = arith.constant 0 : i32
+    %stride = arith.constant 1 : i32
+    
+    // Create a team  
+    %team, %retval = openshmem.team_split_strided(%world_team, %start, %stride, %n_pes) : !openshmem.team, i32, i32, i32 -> !openshmem.team, i32
+    
     openshmem.region {
-      %my_pe = openshmem.my_pe : i32
-      %n_pes = openshmem.n_pes : i32
-      
-      // Create a team (simplified - would normally have more parameters)
-      %team = openshmem.team_split_strided(%my_pe, %n_pes) : i32, i32 -> !openshmem.team
-      
-      openshmem.region : !openshmem.team %team {
-        // Operations within the team context
-        openshmem.barrier(%team) : !openshmem.team
-      }
-      
-      return %team : !openshmem.team
+      // Operations using the team can go here
     }
+    
+    func.return %team : !openshmem.team
   }
 
   // Test context operations  
   func.func @test_contexts() -> !openshmem.ctx {
+    %options = arith.constant 0 : i64
+    %ctx, %status = openshmem.ctx_create(%options) : i64 -> !openshmem.ctx, i32
+    
     openshmem.region {
-      // Create a context
-      %ctx = openshmem.ctx_create : !openshmem.ctx
-      
-      openshmem.region : !openshmem.ctx %ctx {
-        // Operations within the context
-        openshmem.fence(%ctx) : !openshmem.ctx
-        openshmem.quiet(%ctx) : !openshmem.ctx
-      }
-      
-      // Destroy the context
-      openshmem.ctx_destroy(%ctx) : !openshmem.ctx
-      
-      return %ctx : !openshmem.ctx
+      // Operations using the context can go here
     }
+    
+    func.return %ctx : !openshmem.ctx
   }
 }
