@@ -73,10 +73,22 @@ test_lowering() {
     # Check if the pass is available
     if "${OPENSHMEM_OPT}" --help | grep -q "convert-openshmem-to-llvm"; then
         echo "  - Running conversion pass..."
-        if "${OPENSHMEM_OPT}" "${test_file}" --convert-openshmem-to-llvm > /dev/null 2>&1; then
+        
+        # Show MLIR before lowering
+        echo ""
+        echo -e "${BLUE}=== MLIR BEFORE LOWERING ===${NC}"
+        "${OPENSHMEM_OPT}" "${test_file}"
+        
+        echo ""
+        echo -e "${BLUE}=== MLIR AFTER LOWERING ===${NC}"
+        
+        # Test the lowering and show output
+        if "${OPENSHMEM_OPT}" "${test_file}" --convert-openshmem-to-llvm; then
+            echo ""
             echo -e "    ${GREEN}✓ Lowering successful${NC}"
             return 0
         else
+            echo ""
             echo -e "    ${RED}✗ Lowering failed${NC}"
             return 1
         fi
