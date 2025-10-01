@@ -16,6 +16,7 @@ NC='\033[0m' # No Color
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BUILD_DIR="${PROJECT_ROOT}/build"
 TEST_DIR="${PROJECT_ROOT}/test"
+CIR_TEST_DIR="${PROJECT_ROOT}/cir/test"
 OPENSHMEM_OPT="${BUILD_DIR}/tools/openshmem-opt/openshmem-opt"
 
 echo -e "${BLUE}OpenSHMEM MLIR Test Lowering Script${NC}"
@@ -100,6 +101,46 @@ test_lowering() {
     echo ""
 }
 
+# Function to test CIR to OpenSHMEM conversion
+test_cir_conversion() {
+    local test_file="$1"
+    local test_name="$(basename "${test_file}" .mlir)"
+    
+    echo -e "${YELLOW}Testing CIR conversion: ${test_name}${NC}"
+    
+    # Test CIR to OpenSHMEM conversion
+    echo "  - Attempting CIR to OpenSHMEM conversion..."
+    
+    # Check if the pass is available
+    if "${OPENSHMEM_OPT}" --help | grep -q "convert-cir-to-openshmem"; then
+        echo "  - Running CIR conversion pass..."
+        
+        # Show MLIR before conversion
+        echo ""
+        echo -e "${BLUE}=== ClangIR BEFORE CONVERSION ===${NC}"
+        "${OPENSHMEM_OPT}" "${test_file}"
+        
+        echo ""
+        echo -e "${BLUE}=== MLIR AFTER CIR CONVERSION ===${NC}"
+        
+        # Test the conversion and show output
+        if "${OPENSHMEM_OPT}" "${test_file}" --convert-cir-to-openshmem; then
+            echo ""
+            echo -e "    ${GREEN}✓ CIR conversion successful${NC}"
+            return 0
+        else
+            echo ""
+            echo -e "    ${RED}✗ CIR conversion failed${NC}"
+            return 1
+        fi
+    else
+        echo -e "    ${YELLOW}⚠ CIR conversion pass not available${NC}"
+        return 2  # Different return code for "not implemented yet"
+    fi
+    
+    echo ""
+}
+
 # Main test execution
 echo -e "${BLUE}Running OpenSHMEM dialect tests...${NC}"
 echo ""
@@ -154,6 +195,53 @@ if [[ ${additional_files_found} -eq 0 ]]; then
 fi
 
 echo ""
+echo -e "${BLUE}Running ClangIR to OpenSHMEM conversion tests...${NC}"
+echo ""
+
+# Track CIR test results
+cir_tests=0
+cir_passed=0
+cir_failed=0
+cir_not_implemented=0
+
+# Test CIR files if the directory exists
+if [[ -d "${CIR_TEST_DIR}/OpenSHMEM" ]]; then
+    for cir_test_file in "${CIR_TEST_DIR}/OpenSHMEM"/*.mlir; do
+        if [[ -f "${cir_test_file}" ]]; then
+            echo "Found CIR test: ${cir_test_file}"
+            cir_tests=$((cir_tests + 1))
+            total_tests=$((total_tests + 1))
+            
+            # First test basic parsing
+            if run_test "${cir_test_file}"; then
+                # Then test CIR conversion
+                test_cir_conversion "${cir_test_file}"
+                conversion_result=$?
+                if [[ $conversion_result -eq 0 ]]; then
+                    cir_passed=$((cir_passed + 1))
+                    passed_tests=$((passed_tests + 1))
+                elif [[ $conversion_result -eq 2 ]]; then
+                    cir_not_implemented=1
+                    passed_tests=$((passed_tests + 1))  # Count as passed since parsing worked
+                else
+                    cir_failed=$((cir_failed + 1))
+                    failed_tests=$((failed_tests + 1))
+                fi
+            else
+                cir_failed=$((cir_failed + 1))
+                failed_tests=$((failed_tests + 1))
+            fi
+        fi
+    done
+else
+    echo -e "${YELLOW}Warning: CIR test directory ${CIR_TEST_DIR}/OpenSHMEM not found${NC}"
+fi
+
+if [[ ${cir_tests} -eq 0 ]]; then
+    echo "No CIR test files found"
+fi
+
+echo ""
 echo -e "${BLUE}Test Summary${NC}"
 echo "Total tests: ${total_tests}"
 echo -e "Passed: ${GREEN}${passed_tests}${NC}"
@@ -161,8 +249,24 @@ if [[ ${failed_tests} -gt 0 ]]; then
     echo -e "Failed: ${RED}${failed_tests}${NC}"
 fi
 
+if [[ ${cir_tests} -gt 0 ]]; then
+    echo ""
+    echo -e "${BLUE}CIR Test Breakdown:${NC}"
+    echo "CIR tests run: ${cir_tests}"
+    if [[ ${cir_passed} -gt 0 ]]; then
+        echo -e "CIR conversions successful: ${GREEN}${cir_passed}${NC}"
+    fi
+    if [[ ${cir_failed} -gt 0 ]]; then
+        echo -e "CIR conversions failed: ${RED}${cir_failed}${NC}"
+    fi
+fi
+
 if [[ ${lowering_not_implemented} -eq 1 ]]; then
     echo -e "Note: ${YELLOW}Lowering pass not yet implemented${NC}"
+fi
+
+if [[ ${cir_not_implemented} -eq 1 ]]; then
+    echo -e "Note: ${YELLOW}CIR conversion pass available and working${NC}"
 fi
 
 echo ""

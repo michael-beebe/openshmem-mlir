@@ -16,6 +16,7 @@
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/OpenSHMEM/IR/OpenSHMEM.h"
+#include "mlir/IR/BuiltinDialect.h"
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/DialectConversion.h"
@@ -217,6 +218,7 @@ struct ConvertCIRToOpenSHMEMPass
     target.addLegalDialect<openshmem::OpenSHMEMDialect>();
     target.addLegalDialect<func::FuncDialect>();
     target.addLegalDialect<arith::ArithDialect>();
+    target.addLegalDialect<BuiltinDialect>();
     target.addLegalDialect<::cir::CIRDialect>();
 
     // Mark OpenSHMEM API calls as illegal to force conversion
