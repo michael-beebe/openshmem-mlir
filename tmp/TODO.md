@@ -4,4 +4,5 @@ OpenSHMEM MLIR - TODO
   and/or atomic ops. Seems like there might
   be some redundancies.
 
-- Do the cir stuff.
+- Super thoroughly test the parts of cir that
+  have been implemented.

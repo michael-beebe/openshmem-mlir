@@ -11,13 +11,15 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "Utils.h"
 #include "OpenSHMEMCIR/OpenSHMEMCIR.h"
+#include "Utils.h"
 
-#include "mlir/Dialect/OpenSHMEM/IR/OpenSHMEM.h"
+#include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/Dialect/OpenSHMEM/IR/OpenSHMEM.h"
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/Transforms/DialectConversion.h"
+#include "clang/CIR/Dialect/IR/CIRDialect.h"
 
 using namespace mlir;
 using namespace mlir::openshmem;
@@ -31,12 +33,13 @@ namespace cir {
 //===----------------------------------------------------------------------===//
 
 /// Pattern to convert shmem_init() calls to openshmem.init
-struct ConvertShmemInitPattern : public OpRewritePattern<func::CallOp> {
+struct ConvertShmemInitPattern : public OpRewritePattern<::cir::CallOp> {
   using OpRewritePattern::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(func::CallOp callOp,
+  LogicalResult matchAndRewrite(::cir::CallOp callOp,
                                 PatternRewriter &rewriter) const override {
-    if (callOp.getCallee() != "shmem_init")
+    auto callee = callOp.getCallee();
+    if (!callee || callee.value() != "shmem_init")
       return failure();
 
     // Create openshmem.init operation
@@ -46,12 +49,13 @@ struct ConvertShmemInitPattern : public OpRewritePattern<func::CallOp> {
 };
 
 /// Pattern to convert shmem_finalize() calls to openshmem.finalize
-struct ConvertShmemFinalizePattern : public OpRewritePattern<func::CallOp> {
+struct ConvertShmemFinalizePattern : public OpRewritePattern<::cir::CallOp> {
   using OpRewritePattern::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(func::CallOp callOp,
+  LogicalResult matchAndRewrite(::cir::CallOp callOp,
                                 PatternRewriter &rewriter) const override {
-    if (callOp.getCallee() != "shmem_finalize")
+    auto callee = callOp.getCallee();
+    if (!callee || callee.value() != "shmem_finalize")
       return failure();
 
     // Create openshmem.finalize operation
@@ -61,96 +65,109 @@ struct ConvertShmemFinalizePattern : public OpRewritePattern<func::CallOp> {
 };
 
 /// Pattern to convert shmem_my_pe() calls to openshmem.my_pe
-struct ConvertShmemMyPePattern : public OpRewritePattern<func::CallOp> {
+struct ConvertShmemMyPePattern : public OpRewritePattern<::cir::CallOp> {
   using OpRewritePattern::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(func::CallOp callOp,
+  LogicalResult matchAndRewrite(::cir::CallOp callOp,
                                 PatternRewriter &rewriter) const override {
-    if (callOp.getCallee() != "shmem_my_pe")
+    auto callee = callOp.getCallee();
+    if (!callee || callee.value() != "shmem_my_pe")
       return failure();
 
     // Create openshmem.my_pe operation
     Type i32Type = rewriter.getI32Type();
-    auto myPeOp = rewriter.create<openshmem::MyPeOp>(
-        callOp.getLoc(), i32Type);
-    
+    auto myPeOp = rewriter.create<openshmem::MyPeOp>(callOp.getLoc(), i32Type);
+
     rewriter.replaceOp(callOp, myPeOp.getResult());
     return success();
   }
 };
 
-/// Pattern to convert shmem_n_pes() calls to openshmem.n_pes  
-struct ConvertShmemNPesPattern : public OpRewritePattern<func::CallOp> {
+/// Pattern to convert shmem_n_pes() calls to openshmem.n_pes
+struct ConvertShmemNPesPattern : public OpRewritePattern<::cir::CallOp> {
   using OpRewritePattern::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(func::CallOp callOp,
+  LogicalResult matchAndRewrite(::cir::CallOp callOp,
                                 PatternRewriter &rewriter) const override {
-    if (callOp.getCallee() != "shmem_n_pes")
+    auto callee = callOp.getCallee();
+    if (!callee || callee.value() != "shmem_n_pes")
       return failure();
 
     // Create openshmem.n_pes operation
     Type i32Type = rewriter.getI32Type();
-    auto nPesOp = rewriter.create<openshmem::NPesOp>(
-        callOp.getLoc(), i32Type);
-    
+    auto nPesOp = rewriter.create<openshmem::NPesOp>(callOp.getLoc(), i32Type);
+
     rewriter.replaceOp(callOp, nPesOp.getResult());
     return success();
   }
 };
 
 /// Pattern to convert shmem_malloc() calls to openshmem.malloc
-struct ConvertShmemMallocPattern : public OpRewritePattern<func::CallOp> {
+struct ConvertShmemMallocPattern : public OpRewritePattern<::cir::CallOp> {
   using OpRewritePattern::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(func::CallOp callOp,
+  LogicalResult matchAndRewrite(::cir::CallOp callOp,
                                 PatternRewriter &rewriter) const override {
-    if (callOp.getCallee() != "shmem_malloc")
+    auto callee = callOp.getCallee();
+    if (!callee || callee.value() != "shmem_malloc")
       return failure();
 
-    if (callOp.getOperands().size() != 1)
+    if (callOp.getArgOperands().size() != 1)
       return failure();
 
-    Value sizeArg = callOp.getOperand(0);
-    
-    // TODO: Create proper symmetric memory type
-    // For now, use a placeholder memref type
+    Value sizeArg = callOp.getArgOperands()[0];
+
+    // Convert size argument to index type
+    auto indexType = rewriter.getIndexType();
+    auto convertedSize = rewriter.create<arith::IndexCastOp>(
+        callOp.getLoc(), indexType, sizeArg);
+
+    // Create symmetric memory space attribute
+    auto symmetricMemSpace =
+        openshmem::SymmetricMemorySpaceAttr::get(rewriter.getContext());
+
+    // Create memref type with symmetric memory space
     auto elementType = rewriter.getI8Type();
-    auto memRefType = MemRefType::get({ShapedType::kDynamic}, elementType);
-    
+    auto memRefType =
+        MemRefType::get({ShapedType::kDynamic}, elementType,
+                        MemRefLayoutAttrInterface{}, symmetricMemSpace);
+
     auto mallocOp = rewriter.create<openshmem::MallocOp>(
-        callOp.getLoc(), memRefType, sizeArg);
-    
+        callOp.getLoc(), memRefType, convertedSize);
+
     rewriter.replaceOp(callOp, mallocOp.getResult());
     return success();
   }
 };
 
 /// Pattern to convert shmem_free() calls to openshmem.free
-struct ConvertShmemFreePattern : public OpRewritePattern<func::CallOp> {
+struct ConvertShmemFreePattern : public OpRewritePattern<::cir::CallOp> {
   using OpRewritePattern::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(func::CallOp callOp,
+  LogicalResult matchAndRewrite(::cir::CallOp callOp,
                                 PatternRewriter &rewriter) const override {
-    if (callOp.getCallee() != "shmem_free")
+    auto callee = callOp.getCallee();
+    if (!callee || callee.value() != "shmem_free")
       return failure();
 
-    if (callOp.getOperands().size() != 1)
+    if (callOp.getArgOperands().size() != 1)
       return failure();
 
-    Value ptrArg = callOp.getOperand(0);
-    
+    Value ptrArg = callOp.getArgOperands()[0];
+
     rewriter.replaceOpWithNewOp<openshmem::FreeOp>(callOp, ptrArg);
     return success();
   }
 };
 
 /// Pattern to convert shmem_barrier_all() calls to openshmem.barrier_all
-struct ConvertShmemBarrierAllPattern : public OpRewritePattern<func::CallOp> {
+struct ConvertShmemBarrierAllPattern : public OpRewritePattern<::cir::CallOp> {
   using OpRewritePattern::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(func::CallOp callOp,
+  LogicalResult matchAndRewrite(::cir::CallOp callOp,
                                 PatternRewriter &rewriter) const override {
-    if (callOp.getCallee() != "shmem_barrier_all")
+    auto callee = callOp.getCallee();
+    if (!callee || callee.value() != "shmem_barrier_all")
       return failure();
 
     rewriter.replaceOpWithNewOp<openshmem::BarrierAllOp>(callOp);
@@ -159,12 +176,13 @@ struct ConvertShmemBarrierAllPattern : public OpRewritePattern<func::CallOp> {
 };
 
 /// Pattern to convert shmem_quiet() calls to openshmem.quiet
-struct ConvertShmemQuietPattern : public OpRewritePattern<func::CallOp> {
+struct ConvertShmemQuietPattern : public OpRewritePattern<::cir::CallOp> {
   using OpRewritePattern::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(func::CallOp callOp,
+  LogicalResult matchAndRewrite(::cir::CallOp callOp,
                                 PatternRewriter &rewriter) const override {
-    if (callOp.getCallee() != "shmem_quiet")
+    auto callee = callOp.getCallee();
+    if (!callee || callee.value() != "shmem_quiet")
       return failure();
 
     rewriter.replaceOpWithNewOp<openshmem::QuietOp>(callOp);
@@ -177,16 +195,11 @@ struct ConvertShmemQuietPattern : public OpRewritePattern<func::CallOp> {
 //===----------------------------------------------------------------------===//
 
 void populateCIRToOpenSHMEMConversionPatterns(RewritePatternSet &patterns) {
-  patterns.add<
-      ConvertShmemInitPattern,
-      ConvertShmemFinalizePattern,
-      ConvertShmemMyPePattern,
-      ConvertShmemNPesPattern,
-      ConvertShmemMallocPattern,
-      ConvertShmemFreePattern,
-      ConvertShmemBarrierAllPattern,
-      ConvertShmemQuietPattern
-  >(patterns.getContext());
+  patterns.add<ConvertShmemInitPattern, ConvertShmemFinalizePattern,
+               ConvertShmemMyPePattern, ConvertShmemNPesPattern,
+               ConvertShmemMallocPattern, ConvertShmemFreePattern,
+               ConvertShmemBarrierAllPattern, ConvertShmemQuietPattern>(
+      patterns.getContext());
 }
 
 } // namespace cir

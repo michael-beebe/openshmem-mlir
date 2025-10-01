@@ -11,4 +11,5 @@ add_mlir_library(MLIROpenSHMEMCIRRewriters
   MLIRTransforms
   MLIRFuncDialect
   MLIROpenSHMEMDialect
+  MLIRCIR
 )

@@ -40,15 +40,15 @@ StringRef getOpenSHMEMDialectOpName(StringRef apiFunction);
 
 /// OpenSHMEM API function categories for analysis and transformation.
 enum class OpenSHMEMAPICategory {
-  Setup,        // shmem_init, shmem_finalize, etc.
-  Memory,       // shmem_malloc, shmem_free, etc.
-  RMA,          // shmem_put, shmem_get, etc.
-  Atomics,      // shmem_atomic_*, etc.
-  Collectives,  // shmem_broadcast, shmem_reduce, etc.
+  Setup,           // shmem_init, shmem_finalize, etc.
+  Memory,          // shmem_malloc, shmem_free, etc.
+  RMA,             // shmem_put, shmem_get, etc.
+  Atomics,         // shmem_atomic_*, etc.
+  Collectives,     // shmem_broadcast, shmem_reduce, etc.
   Synchronization, // shmem_barrier, shmem_quiet, etc.
-  Teams,        // shmem_team_*, etc.
-  Contexts,     // shmem_ctx_*, etc.
-  Pt2PtSync,    // shmem_wait, shmem_test, etc.
+  Teams,           // shmem_team_*, etc.
+  Contexts,        // shmem_ctx_*, etc.
+  Pt2PtSync,       // shmem_wait, shmem_test, etc.
   Unknown
 };
 

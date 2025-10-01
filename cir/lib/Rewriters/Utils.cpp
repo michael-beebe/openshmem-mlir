@@ -31,7 +31,7 @@ bool isSymmetricMemoryType(Type type) {
 Type convertCIRPtrToOpenSHMEMMemRef(Type cirPtrType, MLIRContext *context) {
   // TODO: Implement CIR pointer to OpenSHMEM memref conversion
   // This requires understanding the CIR type system
-  
+
   // For now, return a generic dynamic memref of i8
   auto elementType = IntegerType::get(context, 8);
   return MemRefType::get({ShapedType::kDynamic}, elementType);
@@ -40,7 +40,7 @@ Type convertCIRPtrToOpenSHMEMMemRef(Type cirPtrType, MLIRContext *context) {
 Type getElementTypeFromCIRPtr(Type cirPtrType) {
   // TODO: Extract element type from CIR pointer type
   // This requires CIR dialect integration
-  
+
   // For now, return i8 as a placeholder
   return IntegerType::get(cirPtrType.getContext(), 8);
 }

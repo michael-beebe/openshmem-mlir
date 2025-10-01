@@ -25,7 +25,7 @@ namespace cir {
 
 // Pass creation functions
 std::unique_ptr<Pass> createConvertCIRToOpenSHMEMPass();
-std::unique_ptr<Pass> createOpenSHMEMRecognitionPass(); 
+std::unique_ptr<Pass> createOpenSHMEMRecognitionPass();
 std::unique_ptr<Pass> createOpenSHMEMCIROptimizationPass();
 
 #define GEN_PASS_REGISTRATION

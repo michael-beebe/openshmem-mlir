@@ -39,6 +39,7 @@ target_link_libraries(openshmem-opt
     MLIROpenSHMEMDialect
     MLIROpenSHMEMCIRPasses
     MLIROpenSHMEMCIRRewriters
+    MLIRCIR
 )
 
 # Make sure the include path contains generated headers

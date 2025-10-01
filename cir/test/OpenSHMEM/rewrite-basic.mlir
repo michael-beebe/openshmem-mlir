@@ -1,41 +1,50 @@
-// RUN: openshmem-opt %s --openshmem-recognition | FileCheck %s
+// RUN: openshmem-opt %s --openshmem-recognition | FileCheck %s --check-prefix=RECOGNITION
+// RUN: openshmem-opt %s --convert-cir-to-openshmem | FileCheck %s --check-prefix=CONVERT
 
-// This test verifies basic OpenSHMEM API recognition and annotation.
+// This test verifies OpenSHMEM API recognition and conversion to OpenSHMEM dialect.
 
 module {
   func.func @test_basic_openshmem() {
-    // CHECK: func.call @shmem_init() {openshmem.api_call = "shmem_init", openshmem.category = {{.*}}} : () -> ()
+    // RECOGNITION: func.call @shmem_init() {openshmem.api_call = "shmem_init", openshmem.category = {{.*}}} : () -> ()
+    // CONVERT: openshmem.init
     func.call @shmem_init() : () -> ()
     
-    // CHECK: func.call @shmem_my_pe() {openshmem.api_call = "shmem_my_pe", openshmem.category = {{.*}}} : () -> i32
+    // RECOGNITION: func.call @shmem_my_pe() {openshmem.api_call = "shmem_my_pe", openshmem.category = {{.*}}} : () -> i32
+    // CONVERT: %{{.*}} = openshmem.my_pe : () -> i32
     %pe = func.call @shmem_my_pe() : () -> i32
     
-    // CHECK: func.call @shmem_n_pes() {openshmem.api_call = "shmem_n_pes", openshmem.category = {{.*}}} : () -> i32
+    // RECOGNITION: func.call @shmem_n_pes() {openshmem.api_call = "shmem_n_pes", openshmem.category = {{.*}}} : () -> i32
+    // CONVERT: %{{.*}} = openshmem.n_pes : () -> i32
     %npes = func.call @shmem_n_pes() : () -> i32
     
-    // CHECK: func.call @shmem_barrier_all() {openshmem.api_call = "shmem_barrier_all", openshmem.category = {{.*}}} : () -> ()
+    // RECOGNITION: func.call @shmem_barrier_all() {openshmem.api_call = "shmem_barrier_all", openshmem.category = {{.*}}} : () -> ()
+    // CONVERT: openshmem.barrier_all
     func.call @shmem_barrier_all() : () -> ()
     
-    // CHECK: func.call @shmem_finalize() {openshmem.api_call = "shmem_finalize", openshmem.category = {{.*}}} : () -> ()
+    // RECOGNITION: func.call @shmem_finalize() {openshmem.api_call = "shmem_finalize", openshmem.category = {{.*}}} : () -> ()
+    // CONVERT: openshmem.finalize
     func.call @shmem_finalize() : () -> ()
     
     return
   }
   
   func.func @test_memory_ops() {
-    %size = arith.constant 1024 : i64
+    %size = arith.constant 1024 : index
     
-    // CHECK: func.call @shmem_malloc(%{{.*}}) {openshmem.api_call = "shmem_malloc", openshmem.category = {{.*}}} : (i64) -> !llvm.ptr
-    %ptr = func.call @shmem_malloc(%size) : (i64) -> !llvm.ptr
+    // RECOGNITION: func.call @shmem_malloc(%{{.*}}) {openshmem.api_call = "shmem_malloc", openshmem.category = {{.*}}} : (index) -> memref<?xi8, #openshmem.symmetric_memory>
+    // CONVERT: %{{.*}} = openshmem.malloc %{{.*}} : (index) -> memref<?xi8, #openshmem.symmetric_memory>
+    %ptr = func.call @shmem_malloc(%size) : (index) -> memref<?xi8, #openshmem.symmetric_memory>
     
-    // CHECK: func.call @shmem_free(%{{.*}}) {openshmem.api_call = "shmem_free", openshmem.category = {{.*}}} : (!llvm.ptr) -> ()
-    func.call @shmem_free(%ptr) : (!llvm.ptr) -> ()
+    // RECOGNITION: func.call @shmem_free(%{{.*}}) {openshmem.api_call = "shmem_free", openshmem.category = {{.*}}} : (memref<?xi8, #openshmem.symmetric_memory>) -> ()
+    // CONVERT: openshmem.free %{{.*}} : memref<?xi8, #openshmem.symmetric_memory>
+    func.call @shmem_free(%ptr) : (memref<?xi8, #openshmem.symmetric_memory>) -> ()
     
     return
   }
   
   func.func @non_openshmem_call() {
-    // CHECK-NOT: openshmem.api_call
+    // RECOGNITION-NOT: openshmem.api_call
+    // CONVERT: func.call @regular_function() : () -> ()
     func.call @regular_function() : () -> ()
     return
   }
@@ -45,7 +54,7 @@ module {
   func.func private @shmem_n_pes() -> i32
   func.func private @shmem_barrier_all() -> ()
   func.func private @shmem_finalize() -> ()
-  func.func private @shmem_malloc(i64) -> !llvm.ptr
-  func.func private @shmem_free(!llvm.ptr) -> ()
+  func.func private @shmem_malloc(index) -> memref<?xi8, #openshmem.symmetric_memory>
+  func.func private @shmem_free(memref<?xi8, #openshmem.symmetric_memory>) -> ()
   func.func private @regular_function() -> ()
 }

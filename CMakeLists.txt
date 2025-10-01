@@ -4,6 +4,9 @@ project(openshmem-mlir LANGUAGES C CXX)
 
 find_package(MLIR REQUIRED CONFIG)
 
+set(Clang_DIR "${MLIR_CMAKE_DIR}/../clang")
+find_package(Clang REQUIRED CONFIG)
+
 list(APPEND CMAKE_MODULE_PATH "${MLIR_CMAKE_DIR}")
 include(TableGen)
 include(AddLLVM)
