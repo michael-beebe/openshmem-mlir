@@ -26,7 +26,8 @@ class OpenSHMEM_Attr<string name, string attrMnemonic, list<Trait> traits = [],
 // Memory Space Attributes
 //===----------------------------------------------------------------------===//
 
-def OpenSHMEM_SymmetricMemorySpaceAttr : OpenSHMEM_Attr<"SymmetricMemorySpace", "symmetric_memory"> {
+def OpenSHMEM_SymmetricMemorySpaceAttr :
+OpenSHMEM_Attr<"SymmetricMemorySpace", "symmetric_memory"> {
   let summary = "Memory space attribute for symmetric memory";
   let description = [{
     This attribute represents the symmetric memory space in OpenSHMEM.
