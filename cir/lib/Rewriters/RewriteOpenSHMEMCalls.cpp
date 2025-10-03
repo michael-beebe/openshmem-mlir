@@ -32,6 +32,9 @@ namespace cir {
 // OpenSHMEM API Call Conversion Patterns
 //===----------------------------------------------------------------------===//
 
+// TODO: some of these opps can be squashed into one pattern with a map of
+// function names to ops
+
 /// Pattern to convert shmem_init() calls to openshmem.init
 struct ConvertShmemInitPattern : public OpRewritePattern<::cir::CallOp> {
   using OpRewritePattern::OpRewritePattern;
