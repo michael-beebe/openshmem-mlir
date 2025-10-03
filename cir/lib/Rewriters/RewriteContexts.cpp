@@ -91,7 +91,8 @@ struct ConvertTeamCreateCtxPattern : public OpRewritePattern<::cir::CallOp> {
     auto i32Type = rewriter.getI32Type();
 
     auto res = rewriter.create<openshmem::TeamCreateCtxOp>(
-        callOp.getLoc(), ArrayRef<Type>{ctxType, i32Type}, ValueRange{team, options});
+        callOp.getLoc(), ArrayRef<Type>{ctxType, i32Type},
+        ValueRange{team, options});
 
     rewriter.replaceOp(callOp, res.getResults());
     return success();

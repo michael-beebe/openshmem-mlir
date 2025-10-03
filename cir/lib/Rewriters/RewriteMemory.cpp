@@ -45,8 +45,10 @@ struct ConvertShmemMallocPattern : public OpRewritePattern<::cir::CallOp> {
 
     // Convert size argument to index type using unrealized conversion cast
     auto indexType = rewriter.getIndexType();
-    auto convertedSize = rewriter.create<UnrealizedConversionCastOp>(
-        callOp.getLoc(), indexType, sizeArg).getResult(0);
+    auto convertedSize = rewriter
+                             .create<UnrealizedConversionCastOp>(
+                                 callOp.getLoc(), indexType, sizeArg)
+                             .getResult(0);
 
     // Create symmetric memory space attribute
     auto symmetricMemSpace =
@@ -61,7 +63,8 @@ struct ConvertShmemMallocPattern : public OpRewritePattern<::cir::CallOp> {
     auto mallocOp = rewriter.create<openshmem::MallocOp>(
         callOp.getLoc(), memRefType, convertedSize);
 
-    // Cast the result back to a CIR pointer type to match the original return type
+    // Cast the result back to a CIR pointer type to match the original return
+    // type
     auto resultCast = rewriter.create<UnrealizedConversionCastOp>(
         callOp.getLoc(), callOp.getResultTypes(), mallocOp.getResult());
 
@@ -96,8 +99,10 @@ struct ConvertShmemFreePattern : public OpRewritePattern<::cir::CallOp> {
                         MemRefLayoutAttrInterface{}, symmetricMemSpace);
 
     // Cast the CIR pointer to memref type for the free operation
-    auto convertedPtr = rewriter.create<UnrealizedConversionCastOp>(
-        callOp.getLoc(), memRefType, ptrArg).getResult(0);
+    auto convertedPtr = rewriter
+                            .create<UnrealizedConversionCastOp>(
+                                callOp.getLoc(), memRefType, ptrArg)
+                            .getResult(0);
 
     rewriter.replaceOpWithNewOp<openshmem::FreeOp>(callOp, convertedPtr);
     return success();

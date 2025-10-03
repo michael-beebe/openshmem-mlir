@@ -517,9 +517,9 @@ void openshmem::populateRMAOpsToLLVMConversionPatterns(
   // Register conversion patterns for the simplified RMA op set. Sized and
   // single-element ops were removed from the dialect and therefore their
   // lowerings are not registered here.
-  patterns.add<
-    PutOpLowering, CtxPutOpLowering, PutNbiOpLowering, CtxPutNbiOpLowering,
-    PutmemOpLowering, PutmemNbiOpLowering,
-    GetOpLowering, CtxGetOpLowering, GetNbiOpLowering, CtxGetNbiOpLowering,
-    GetmemOpLowering, GetmemNbiOpLowering>(converter);
+  patterns.add<PutOpLowering, CtxPutOpLowering, PutNbiOpLowering,
+               CtxPutNbiOpLowering, PutmemOpLowering, PutmemNbiOpLowering,
+               GetOpLowering, CtxGetOpLowering, GetNbiOpLowering,
+               CtxGetNbiOpLowering, GetmemOpLowering, GetmemNbiOpLowering>(
+      converter);
 }

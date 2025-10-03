@@ -7,8 +7,8 @@
 //===----------------------------------------------------------------------===//
 //
 // Patterns for converting CIR team-related OpenSHMEM calls to OpenSHMEM
-// dialect operations (team_world, team_shared, team_split_strided, team_split_2d,
-// team_destroy, team_sync, etc.).
+// dialect operations (team_world, team_shared, team_split_strided,
+// team_split_2d, team_destroy, team_sync, etc.).
 //
 //===----------------------------------------------------------------------===//
 
@@ -39,7 +39,8 @@ struct ConvertTeamWorldPattern : public OpRewritePattern<::cir::CallOp> {
       return failure();
 
     auto teamType = rewriter.getType<::mlir::openshmem::TeamType>();
-    auto teamOp = rewriter.create<openshmem::TeamWorldOp>(callOp.getLoc(), teamType);
+    auto teamOp =
+        rewriter.create<openshmem::TeamWorldOp>(callOp.getLoc(), teamType);
     rewriter.replaceOp(callOp, teamOp.getResult());
     return success();
   }
@@ -56,13 +57,15 @@ struct ConvertTeamSharedPattern : public OpRewritePattern<::cir::CallOp> {
       return failure();
 
     auto teamType = rewriter.getType<::mlir::openshmem::TeamType>();
-    auto teamOp = rewriter.create<openshmem::TeamSharedOp>(callOp.getLoc(), teamType);
+    auto teamOp =
+        rewriter.create<openshmem::TeamSharedOp>(callOp.getLoc(), teamType);
     rewriter.replaceOp(callOp, teamOp.getResult());
     return success();
   }
 };
 
-/// Pattern to convert shmem_team_split_strided() to openshmem.team_split_strided
+/// Pattern to convert shmem_team_split_strided() to
+/// openshmem.team_split_strided
 struct ConvertTeamSplitStridedPattern : public OpRewritePattern<::cir::CallOp> {
   using OpRewritePattern::OpRewritePattern;
 
