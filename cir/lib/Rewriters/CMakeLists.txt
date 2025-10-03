@@ -4,6 +4,7 @@ add_mlir_library(MLIROpenSHMEMCIRRewriters
   RewriteMemory.cpp
   RewriteSync.cpp
   RewriteTeams.cpp
+  RewriteCollectives.cpp
   RewriteContexts.cpp
   Utils.cpp
 

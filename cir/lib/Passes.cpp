@@ -106,6 +106,10 @@ static const llvm::StringMap<OpenSHMEMAPICategory> openSHMEMAPIMap = {
     {"shmem_sum_reduce", OpenSHMEMAPICategory::Collectives},
     {"shmem_max_reduce", OpenSHMEMAPICategory::Collectives},
     {"shmem_min_reduce", OpenSHMEMAPICategory::Collectives},
+    {"shmem_prod_reduce", OpenSHMEMAPICategory::Collectives},
+    {"shmem_and_reduce", OpenSHMEMAPICategory::Collectives},
+    {"shmem_or_reduce", OpenSHMEMAPICategory::Collectives},
+    {"shmem_xor_reduce", OpenSHMEMAPICategory::Collectives},
 
     // Synchronization
     {"shmem_barrier_all", OpenSHMEMAPICategory::Synchronization},
@@ -113,6 +117,9 @@ static const llvm::StringMap<OpenSHMEMAPICategory> openSHMEMAPIMap = {
     {"shmem_quiet", OpenSHMEMAPICategory::Synchronization},
 
     // Teams
+    // TODO: need SHMEM_TEAM_WORLD and SHMEM_TEAM_SHARED
+    {"shmem_team_world", OpenSHMEMAPICategory::Teams},
+    {"shmem_team_shared", OpenSHMEMAPICategory::Teams},
     {"shmem_team_split_strided", OpenSHMEMAPICategory::Teams},
     {"shmem_team_split_2d", OpenSHMEMAPICategory::Teams},
     {"shmem_team_destroy", OpenSHMEMAPICategory::Teams},
