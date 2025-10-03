@@ -1,5 +1,10 @@
 add_mlir_library(MLIROpenSHMEMCIRRewriters
   RewriteOpenSHMEMCalls.cpp
+  RewriteSetup.cpp
+  RewriteMemory.cpp
+  RewriteSync.cpp
+  RewriteTeams.cpp
+  RewriteContexts.cpp
   Utils.cpp
 
   ADDITIONAL_HEADER_DIRS
