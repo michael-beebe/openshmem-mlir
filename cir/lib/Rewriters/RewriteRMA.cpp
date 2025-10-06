@@ -38,9 +38,18 @@ static Value convertToIndex(Value val, Location loc,
 }
 
 // Helper function to convert CIR int to i32
-static Value convertToI32(Value val, Location loc, PatternRewriter &rewriter) {
+static Value convertToI32(Value val, Location loc,
+                          PatternRewriter &rewriter) {
   auto i32Type = rewriter.getI32Type();
   return rewriter.create<UnrealizedConversionCastOp>(loc, i32Type, val)
+      .getResult(0);
+}
+
+// Helper function to convert CIR pointer to context type
+static Value convertToCtx(Value val, Location loc,
+                         PatternRewriter &rewriter) {
+  auto ctxType = openshmem::CtxType::get(rewriter.getContext());
+  return rewriter.create<UnrealizedConversionCastOp>(loc, ctxType, val)
       .getResult(0);
 }
 
@@ -274,6 +283,130 @@ public:
 };
 
 //===----------------------------------------------------------------------===//
+// Context-aware RMA Patterns
+//===----------------------------------------------------------------------===//
+
+// Context-aware Put operation
+class ConvertCtxPutPattern : public OpRewritePattern<::cir::CallOp> {
+public:
+  using OpRewritePattern<::cir::CallOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(::cir::CallOp op,
+                                PatternRewriter &rewriter) const override {
+    auto callee = op.getCallee();
+    if (!callee || callee.value() != "shmem_ctx_put")
+      return failure();
+
+    auto operands = op.getOperands();
+    if (operands.size() != 5)
+      return failure();
+
+    auto ctx = openshmem::cir::convertToCtx(operands[0], op.getLoc(), rewriter);
+    auto dest =
+        openshmem::cir::convertPtrToMemRef(operands[1], op.getLoc(), rewriter);
+    auto src =
+        openshmem::cir::convertPtrToMemRef(operands[2], op.getLoc(), rewriter);
+    auto nelems =
+        openshmem::cir::convertToIndex(operands[3], op.getLoc(), rewriter);
+    auto pe = openshmem::cir::convertToI32(operands[4], op.getLoc(), rewriter);
+
+    rewriter.replaceOpWithNewOp<openshmem::CtxPutOp>(op, ctx, dest, src,
+                                                     nelems, pe);
+    return success();
+  }
+};
+
+// Context-aware non-blocking Put operation
+class ConvertCtxPutNbiPattern : public OpRewritePattern<::cir::CallOp> {
+public:
+  using OpRewritePattern<::cir::CallOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(::cir::CallOp op,
+                                PatternRewriter &rewriter) const override {
+    auto callee = op.getCallee();
+    if (!callee || callee.value() != "shmem_ctx_put_nbi")
+      return failure();
+
+    auto operands = op.getOperands();
+    if (operands.size() != 5)
+      return failure();
+
+    auto ctx = openshmem::cir::convertToCtx(operands[0], op.getLoc(), rewriter);
+    auto dest =
+        openshmem::cir::convertPtrToMemRef(operands[1], op.getLoc(), rewriter);
+    auto src =
+        openshmem::cir::convertPtrToMemRef(operands[2], op.getLoc(), rewriter);
+    auto nelems =
+        openshmem::cir::convertToIndex(operands[3], op.getLoc(), rewriter);
+    auto pe = openshmem::cir::convertToI32(operands[4], op.getLoc(), rewriter);
+
+    rewriter.replaceOpWithNewOp<openshmem::CtxPutNbiOp>(op, ctx, dest,
+                                                        src, nelems, pe);
+    return success();
+  }
+};
+
+// Context-aware Get operation
+class ConvertCtxGetPattern : public OpRewritePattern<::cir::CallOp> {
+public:
+  using OpRewritePattern<::cir::CallOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(::cir::CallOp op,
+                                PatternRewriter &rewriter) const override {
+    auto callee = op.getCallee();
+    if (!callee || callee.value() != "shmem_ctx_get")
+      return failure();
+
+    auto operands = op.getOperands();
+    if (operands.size() != 5)
+      return failure();
+
+    auto ctx = openshmem::cir::convertToCtx(operands[0], op.getLoc(), rewriter);
+    auto dest =
+        openshmem::cir::convertPtrToMemRef(operands[1], op.getLoc(), rewriter);
+    auto src =
+        openshmem::cir::convertPtrToMemRef(operands[2], op.getLoc(), rewriter);
+    auto nelems =
+        openshmem::cir::convertToIndex(operands[3], op.getLoc(), rewriter);
+    auto pe = openshmem::cir::convertToI32(operands[4], op.getLoc(), rewriter);
+
+    rewriter.replaceOpWithNewOp<openshmem::CtxGetOp>(op, ctx, dest, src,
+                                                     nelems, pe);
+    return success();
+  }
+};
+
+// Context-aware non-blocking Get operation
+class ConvertCtxGetNbiPattern : public OpRewritePattern<::cir::CallOp> {
+public:
+  using OpRewritePattern<::cir::CallOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(::cir::CallOp op,
+                                PatternRewriter &rewriter) const override {
+    auto callee = op.getCallee();
+    if (!callee || callee.value() != "shmem_ctx_get_nbi")
+      return failure();
+
+    auto operands = op.getOperands();
+    if (operands.size() != 5)
+      return failure();
+
+    auto ctx = openshmem::cir::convertToCtx(operands[0], op.getLoc(), rewriter);
+    auto dest =
+        openshmem::cir::convertPtrToMemRef(operands[1], op.getLoc(), rewriter);
+    auto src =
+        openshmem::cir::convertPtrToMemRef(operands[2], op.getLoc(), rewriter);
+    auto nelems =
+        openshmem::cir::convertToIndex(operands[3], op.getLoc(), rewriter);
+    auto pe = openshmem::cir::convertToI32(operands[4], op.getLoc(), rewriter);
+
+    rewriter.replaceOpWithNewOp<openshmem::CtxGetNbiOp>(op, ctx, dest,
+                                                        src, nelems, pe);
+    return success();
+  }
+};
+
+//===----------------------------------------------------------------------===//
 // Pattern Population
 //===----------------------------------------------------------------------===//
 
@@ -282,14 +415,23 @@ namespace openshmem {
 namespace cir {
 
 void populateCIRToOpenSHMEMRMAPatterns(RewritePatternSet &patterns) {
+  // Basic RMA patterns
   patterns.add<ConvertPutPattern>(patterns.getContext());
   patterns.add<ConvertPutNbiPattern>(patterns.getContext());
   patterns.add<ConvertGetPattern>(patterns.getContext());
   patterns.add<ConvertGetNbiPattern>(patterns.getContext());
+  
+  // Byte-level RMA patterns
   patterns.add<ConvertPutmemPattern>(patterns.getContext());
   patterns.add<ConvertPutmemNbiPattern>(patterns.getContext());
   patterns.add<ConvertGetmemPattern>(patterns.getContext());
   patterns.add<ConvertGetmemNbiPattern>(patterns.getContext());
+  
+  // Context-aware RMA patterns
+  patterns.add<ConvertCtxPutPattern>(patterns.getContext());
+  patterns.add<ConvertCtxPutNbiPattern>(patterns.getContext());
+  patterns.add<ConvertCtxGetPattern>(patterns.getContext());
+  patterns.add<ConvertCtxGetNbiPattern>(patterns.getContext());
 }
 
 } // namespace cir
