@@ -8,6 +8,7 @@ add_mlir_library(MLIROpenSHMEMCIRRewriters
   RewriteContexts.cpp
   RewriteRMA.cpp
   RewritePt2ptSync.cpp
+  RewriteAtomics.cpp
   Utils.cpp
 
   ADDITIONAL_HEADER_DIRS

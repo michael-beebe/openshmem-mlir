@@ -74,4 +74,3 @@ echo "==> Building..."
 cmake --build "${BUILD_DIR}" -- -j"$(nproc)"
 
 echo "==> Done. Build tree: ${BUILD_DIR}"
-

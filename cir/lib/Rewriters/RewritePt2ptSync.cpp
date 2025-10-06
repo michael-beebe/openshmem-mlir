@@ -35,25 +35,25 @@ static Value convertPtrToMemRef(OpBuilder &builder, Location loc, Value ptr) {
 }
 
 static Value convertToIndex(OpBuilder &builder, Location loc, Value value) {
-  return builder.create<UnrealizedConversionCastOp>(loc, builder.getIndexType(),
-                                                     value)
+  return builder
+      .create<UnrealizedConversionCastOp>(loc, builder.getIndexType(), value)
       .getResult(0);
 }
 
 static Value convertToI32(OpBuilder &builder, Location loc, Value value) {
-  return builder.create<UnrealizedConversionCastOp>(loc, builder.getI32Type(),
-                                                     value)
+  return builder
+      .create<UnrealizedConversionCastOp>(loc, builder.getI32Type(), value)
       .getResult(0);
 }
 
 static Value convertToI64(OpBuilder &builder, Location loc, Value value) {
-  return builder.create<UnrealizedConversionCastOp>(loc, builder.getI64Type(),
-                                                     value)
+  return builder
+      .create<UnrealizedConversionCastOp>(loc, builder.getI64Type(), value)
       .getResult(0);
 }
 
 static Value convertToAnyType(OpBuilder &builder, Location loc, Value value,
-                               Type targetType) {
+                              Type targetType) {
   return builder.create<UnrealizedConversionCastOp>(loc, targetType, value)
       .getResult(0);
 }
@@ -78,10 +78,10 @@ struct ConvertWaitUntilPattern : public OpRewritePattern<::cir::CallOp> {
     auto ivar = convertPtrToMemRef(rewriter, op.getLoc(), operands[0]);
     auto cmp = convertToI32(rewriter, op.getLoc(), operands[1]);
     auto cmpValue = convertToAnyType(rewriter, op.getLoc(), operands[2],
-                                      rewriter.getI32Type());
+                                     rewriter.getI32Type());
 
-    rewriter.replaceOpWithNewOp<mlir::openshmem::WaitUntilOp>(
-        op, ivar, cmp, cmpValue);
+    rewriter.replaceOpWithNewOp<mlir::openshmem::WaitUntilOp>(op, ivar, cmp,
+                                                              cmpValue);
     return success();
   }
 };
@@ -104,7 +104,7 @@ struct ConvertWaitUntilAllPattern : public OpRewritePattern<::cir::CallOp> {
     auto status = convertPtrToMemRef(rewriter, op.getLoc(), operands[2]);
     auto cmp = convertToI32(rewriter, op.getLoc(), operands[3]);
     auto cmpValue = convertToAnyType(rewriter, op.getLoc(), operands[4],
-                                      rewriter.getI32Type());
+                                     rewriter.getI32Type());
 
     rewriter.replaceOpWithNewOp<mlir::openshmem::WaitUntilAllOp>(
         op, ivars, nelems, status, cmp, cmpValue);
@@ -130,7 +130,7 @@ struct ConvertWaitUntilAnyPattern : public OpRewritePattern<::cir::CallOp> {
     auto status = convertPtrToMemRef(rewriter, op.getLoc(), operands[2]);
     auto cmp = convertToI32(rewriter, op.getLoc(), operands[3]);
     auto cmpValue = convertToAnyType(rewriter, op.getLoc(), operands[4],
-                                      rewriter.getI32Type());
+                                     rewriter.getI32Type());
 
     rewriter.replaceOpWithNewOp<mlir::openshmem::WaitUntilAnyOp>(
         op, ivars, nelems, status, cmp, cmpValue);
@@ -157,7 +157,7 @@ struct ConvertWaitUntilSomePattern : public OpRewritePattern<::cir::CallOp> {
     auto status = convertPtrToMemRef(rewriter, op.getLoc(), operands[3]);
     auto cmp = convertToI32(rewriter, op.getLoc(), operands[4]);
     auto cmpValue = convertToAnyType(rewriter, op.getLoc(), operands[5],
-                                      rewriter.getI32Type());
+                                     rewriter.getI32Type());
 
     auto newOp = rewriter.create<mlir::openshmem::WaitUntilSomeOp>(
         op.getLoc(), rewriter.getIndexType(), ivars, nelems, indices, status,
@@ -285,7 +285,7 @@ struct ConvertTestPattern : public OpRewritePattern<::cir::CallOp> {
     auto ivar = convertPtrToMemRef(rewriter, op.getLoc(), operands[0]);
     auto cmp = convertToI32(rewriter, op.getLoc(), operands[1]);
     auto cmpValue = convertToAnyType(rewriter, op.getLoc(), operands[2],
-                                      rewriter.getI32Type());
+                                     rewriter.getI32Type());
 
     auto newOp = rewriter.create<mlir::openshmem::TestOp>(
         op.getLoc(), rewriter.getI32Type(), ivar, cmp, cmpValue);
@@ -317,7 +317,7 @@ struct ConvertTestAllPattern : public OpRewritePattern<::cir::CallOp> {
     auto status = convertPtrToMemRef(rewriter, op.getLoc(), operands[2]);
     auto cmp = convertToI32(rewriter, op.getLoc(), operands[3]);
     auto cmpValue = convertToAnyType(rewriter, op.getLoc(), operands[4],
-                                      rewriter.getI32Type());
+                                     rewriter.getI32Type());
 
     auto newOp = rewriter.create<mlir::openshmem::TestAllOp>(
         op.getLoc(), rewriter.getI32Type(), ivars, nelems, status, cmp,
@@ -350,7 +350,7 @@ struct ConvertTestAnyPattern : public OpRewritePattern<::cir::CallOp> {
     auto status = convertPtrToMemRef(rewriter, op.getLoc(), operands[2]);
     auto cmp = convertToI32(rewriter, op.getLoc(), operands[3]);
     auto cmpValue = convertToAnyType(rewriter, op.getLoc(), operands[4],
-                                      rewriter.getI32Type());
+                                     rewriter.getI32Type());
 
     auto newOp = rewriter.create<mlir::openshmem::TestAnyOp>(
         op.getLoc(), rewriter.getIndexType(), ivars, nelems, status, cmp,
@@ -384,7 +384,7 @@ struct ConvertTestSomePattern : public OpRewritePattern<::cir::CallOp> {
     auto status = convertPtrToMemRef(rewriter, op.getLoc(), operands[3]);
     auto cmp = convertToI32(rewriter, op.getLoc(), operands[4]);
     auto cmpValue = convertToAnyType(rewriter, op.getLoc(), operands[5],
-                                      rewriter.getI32Type());
+                                     rewriter.getI32Type());
 
     auto newOp = rewriter.create<mlir::openshmem::TestSomeOp>(
         op.getLoc(), rewriter.getIndexType(), ivars, nelems, indices, status,
@@ -404,8 +404,7 @@ struct ConvertTestSomePattern : public OpRewritePattern<::cir::CallOp> {
 //===----------------------------------------------------------------------===//
 
 // Pattern for shmem_test_all_vector
-struct ConvertTestAllVectorPattern
-    : public OpRewritePattern<::cir::CallOp> {
+struct ConvertTestAllVectorPattern : public OpRewritePattern<::cir::CallOp> {
   using OpRewritePattern<::cir::CallOp>::OpRewritePattern;
 
   LogicalResult matchAndRewrite(::cir::CallOp op,
@@ -437,8 +436,7 @@ struct ConvertTestAllVectorPattern
 };
 
 // Pattern for shmem_test_any_vector
-struct ConvertTestAnyVectorPattern
-    : public OpRewritePattern<::cir::CallOp> {
+struct ConvertTestAnyVectorPattern : public OpRewritePattern<::cir::CallOp> {
   using OpRewritePattern<::cir::CallOp>::OpRewritePattern;
 
   LogicalResult matchAndRewrite(::cir::CallOp op,
@@ -470,8 +468,7 @@ struct ConvertTestAnyVectorPattern
 };
 
 // Pattern for shmem_test_some_vector
-struct ConvertTestSomeVectorPattern
-    : public OpRewritePattern<::cir::CallOp> {
+struct ConvertTestSomeVectorPattern : public OpRewritePattern<::cir::CallOp> {
   using OpRewritePattern<::cir::CallOp>::OpRewritePattern;
 
   LogicalResult matchAndRewrite(::cir::CallOp op,
@@ -508,8 +505,7 @@ struct ConvertTestSomeVectorPattern
 //===----------------------------------------------------------------------===//
 
 // Pattern for shmem_signal_wait_until
-struct ConvertSignalWaitUntilPattern
-    : public OpRewritePattern<::cir::CallOp> {
+struct ConvertSignalWaitUntilPattern : public OpRewritePattern<::cir::CallOp> {
   using OpRewritePattern<::cir::CallOp>::OpRewritePattern;
 
   LogicalResult matchAndRewrite(::cir::CallOp op,
