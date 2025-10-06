@@ -40,8 +40,8 @@ static Value convertPtrToMemRef(OpBuilder &builder, Location loc, Value ptr) {
 }
 
 static Value convertToI32(OpBuilder &builder, Location loc, Value value) {
-  return builder.create<UnrealizedConversionCastOp>(loc, builder.getI32Type(),
-                                                     value)
+  return builder
+      .create<UnrealizedConversionCastOp>(loc, builder.getI32Type(), value)
       .getResult(0);
 }
 
@@ -52,7 +52,7 @@ static Value convertToCtx(OpBuilder &builder, Location loc, Value val) {
 }
 
 static Value convertToAnyType(OpBuilder &builder, Location loc, Value value,
-                               Type targetType) {
+                              Type targetType) {
   return builder.create<UnrealizedConversionCastOp>(loc, targetType, value)
       .getResult(0);
 }
@@ -104,11 +104,11 @@ struct ConvertAtomicSetPattern : public OpRewritePattern<::cir::CallOp> {
 
     auto dest = convertPtrToMemRef(rewriter, op.getLoc(), operands[0]);
     auto value = convertToAnyType(rewriter, op.getLoc(), operands[1],
-                                   rewriter.getI32Type());
+                                  rewriter.getI32Type());
     auto pe = convertToI32(rewriter, op.getLoc(), operands[2]);
 
     rewriter.replaceOpWithNewOp<mlir::openshmem::AtomicSetOp>(op, dest, value,
-                                                               pe);
+                                                              pe);
     return success();
   }
 };
@@ -130,9 +130,9 @@ struct ConvertAtomicCompareSwapPattern
 
     auto dest = convertPtrToMemRef(rewriter, op.getLoc(), operands[0]);
     auto cond = convertToAnyType(rewriter, op.getLoc(), operands[1],
-                                  rewriter.getI32Type());
+                                 rewriter.getI32Type());
     auto value = convertToAnyType(rewriter, op.getLoc(), operands[2],
-                                   rewriter.getI32Type());
+                                  rewriter.getI32Type());
     auto pe = convertToI32(rewriter, op.getLoc(), operands[3]);
 
     auto newOp = rewriter.create<mlir::openshmem::AtomicCompareSwapOp>(
@@ -162,7 +162,7 @@ struct ConvertAtomicSwapPattern : public OpRewritePattern<::cir::CallOp> {
 
     auto dest = convertPtrToMemRef(rewriter, op.getLoc(), operands[0]);
     auto value = convertToAnyType(rewriter, op.getLoc(), operands[1],
-                                   rewriter.getI32Type());
+                                  rewriter.getI32Type());
     auto pe = convertToI32(rewriter, op.getLoc(), operands[2]);
 
     auto newOp = rewriter.create<mlir::openshmem::AtomicSwapOp>(
@@ -241,7 +241,7 @@ struct ConvertAtomicFetchAddPattern : public OpRewritePattern<::cir::CallOp> {
 
     auto dest = convertPtrToMemRef(rewriter, op.getLoc(), operands[0]);
     auto value = convertToAnyType(rewriter, op.getLoc(), operands[1],
-                                   rewriter.getI32Type());
+                                  rewriter.getI32Type());
     auto pe = convertToI32(rewriter, op.getLoc(), operands[2]);
 
     auto newOp = rewriter.create<mlir::openshmem::AtomicFetchAddOp>(
@@ -271,11 +271,11 @@ struct ConvertAtomicAddPattern : public OpRewritePattern<::cir::CallOp> {
 
     auto dest = convertPtrToMemRef(rewriter, op.getLoc(), operands[0]);
     auto value = convertToAnyType(rewriter, op.getLoc(), operands[1],
-                                   rewriter.getI32Type());
+                                  rewriter.getI32Type());
     auto pe = convertToI32(rewriter, op.getLoc(), operands[2]);
 
     rewriter.replaceOpWithNewOp<mlir::openshmem::AtomicAddOp>(op, dest, value,
-                                                               pe);
+                                                              pe);
     return success();
   }
 };
@@ -295,7 +295,7 @@ struct ConvertAtomicFetchAndPattern : public OpRewritePattern<::cir::CallOp> {
 
     auto dest = convertPtrToMemRef(rewriter, op.getLoc(), operands[0]);
     auto value = convertToAnyType(rewriter, op.getLoc(), operands[1],
-                                   rewriter.getI32Type());
+                                  rewriter.getI32Type());
     auto pe = convertToI32(rewriter, op.getLoc(), operands[2]);
 
     auto newOp = rewriter.create<mlir::openshmem::AtomicFetchAndOp>(
@@ -325,7 +325,7 @@ struct ConvertAtomicFetchOrPattern : public OpRewritePattern<::cir::CallOp> {
 
     auto dest = convertPtrToMemRef(rewriter, op.getLoc(), operands[0]);
     auto value = convertToAnyType(rewriter, op.getLoc(), operands[1],
-                                   rewriter.getI32Type());
+                                  rewriter.getI32Type());
     auto pe = convertToI32(rewriter, op.getLoc(), operands[2]);
 
     auto newOp = rewriter.create<mlir::openshmem::AtomicFetchOrOp>(
@@ -355,11 +355,11 @@ struct ConvertAtomicOrPattern : public OpRewritePattern<::cir::CallOp> {
 
     auto dest = convertPtrToMemRef(rewriter, op.getLoc(), operands[0]);
     auto value = convertToAnyType(rewriter, op.getLoc(), operands[1],
-                                   rewriter.getI32Type());
+                                  rewriter.getI32Type());
     auto pe = convertToI32(rewriter, op.getLoc(), operands[2]);
 
     rewriter.replaceOpWithNewOp<mlir::openshmem::AtomicOrOp>(op, dest, value,
-                                                              pe);
+                                                             pe);
     return success();
   }
 };
@@ -379,7 +379,7 @@ struct ConvertAtomicFetchXorPattern : public OpRewritePattern<::cir::CallOp> {
 
     auto dest = convertPtrToMemRef(rewriter, op.getLoc(), operands[0]);
     auto value = convertToAnyType(rewriter, op.getLoc(), operands[1],
-                                   rewriter.getI32Type());
+                                  rewriter.getI32Type());
     auto pe = convertToI32(rewriter, op.getLoc(), operands[2]);
 
     auto newOp = rewriter.create<mlir::openshmem::AtomicFetchXorOp>(
@@ -409,11 +409,11 @@ struct ConvertAtomicXorPattern : public OpRewritePattern<::cir::CallOp> {
 
     auto dest = convertPtrToMemRef(rewriter, op.getLoc(), operands[0]);
     auto value = convertToAnyType(rewriter, op.getLoc(), operands[1],
-                                   rewriter.getI32Type());
+                                  rewriter.getI32Type());
     auto pe = convertToI32(rewriter, op.getLoc(), operands[2]);
 
     rewriter.replaceOpWithNewOp<mlir::openshmem::AtomicXorOp>(op, dest, value,
-                                                               pe);
+                                                              pe);
     return success();
   }
 };
@@ -467,11 +467,11 @@ struct ConvertCtxAtomicSetPattern : public OpRewritePattern<::cir::CallOp> {
     auto ctx = convertToCtx(rewriter, op.getLoc(), operands[0]);
     auto dest = convertPtrToMemRef(rewriter, op.getLoc(), operands[1]);
     auto value = convertToAnyType(rewriter, op.getLoc(), operands[2],
-                                   rewriter.getI32Type());
+                                  rewriter.getI32Type());
     auto pe = convertToI32(rewriter, op.getLoc(), operands[3]);
 
     rewriter.replaceOpWithNewOp<mlir::openshmem::CtxAtomicSetOp>(op, ctx, dest,
-                                                                  value, pe);
+                                                                 value, pe);
     return success();
   }
 };
@@ -494,9 +494,9 @@ struct ConvertCtxAtomicCompareSwapPattern
     auto ctx = convertToCtx(rewriter, op.getLoc(), operands[0]);
     auto dest = convertPtrToMemRef(rewriter, op.getLoc(), operands[1]);
     auto cond = convertToAnyType(rewriter, op.getLoc(), operands[2],
-                                  rewriter.getI32Type());
+                                 rewriter.getI32Type());
     auto value = convertToAnyType(rewriter, op.getLoc(), operands[3],
-                                   rewriter.getI32Type());
+                                  rewriter.getI32Type());
     auto pe = convertToI32(rewriter, op.getLoc(), operands[4]);
 
     auto newOp = rewriter.create<mlir::openshmem::CtxAtomicCompareSwapOp>(
@@ -527,7 +527,7 @@ struct ConvertCtxAtomicSwapPattern : public OpRewritePattern<::cir::CallOp> {
     auto ctx = convertToCtx(rewriter, op.getLoc(), operands[0]);
     auto dest = convertPtrToMemRef(rewriter, op.getLoc(), operands[1]);
     auto value = convertToAnyType(rewriter, op.getLoc(), operands[2],
-                                   rewriter.getI32Type());
+                                  rewriter.getI32Type());
     auto pe = convertToI32(rewriter, op.getLoc(), operands[3]);
 
     auto newOp = rewriter.create<mlir::openshmem::CtxAtomicSwapOp>(
@@ -591,7 +591,7 @@ struct ConvertCtxAtomicIncPattern : public OpRewritePattern<::cir::CallOp> {
     auto pe = convertToI32(rewriter, op.getLoc(), operands[2]);
 
     rewriter.replaceOpWithNewOp<mlir::openshmem::CtxAtomicIncOp>(op, ctx, dest,
-                                                                  pe);
+                                                                 pe);
     return success();
   }
 };
@@ -614,7 +614,7 @@ struct ConvertCtxAtomicFetchAddPattern
     auto ctx = convertToCtx(rewriter, op.getLoc(), operands[0]);
     auto dest = convertPtrToMemRef(rewriter, op.getLoc(), operands[1]);
     auto value = convertToAnyType(rewriter, op.getLoc(), operands[2],
-                                   rewriter.getI32Type());
+                                  rewriter.getI32Type());
     auto pe = convertToI32(rewriter, op.getLoc(), operands[3]);
 
     auto newOp = rewriter.create<mlir::openshmem::CtxAtomicFetchAddOp>(
@@ -645,11 +645,11 @@ struct ConvertCtxAtomicAddPattern : public OpRewritePattern<::cir::CallOp> {
     auto ctx = convertToCtx(rewriter, op.getLoc(), operands[0]);
     auto dest = convertPtrToMemRef(rewriter, op.getLoc(), operands[1]);
     auto value = convertToAnyType(rewriter, op.getLoc(), operands[2],
-                                   rewriter.getI32Type());
+                                  rewriter.getI32Type());
     auto pe = convertToI32(rewriter, op.getLoc(), operands[3]);
 
     rewriter.replaceOpWithNewOp<mlir::openshmem::CtxAtomicAddOp>(op, ctx, dest,
-                                                                  value, pe);
+                                                                 value, pe);
     return success();
   }
 };
@@ -672,7 +672,7 @@ struct ConvertCtxAtomicFetchAndPattern
     auto ctx = convertToCtx(rewriter, op.getLoc(), operands[0]);
     auto dest = convertPtrToMemRef(rewriter, op.getLoc(), operands[1]);
     auto value = convertToAnyType(rewriter, op.getLoc(), operands[2],
-                                   rewriter.getI32Type());
+                                  rewriter.getI32Type());
     auto pe = convertToI32(rewriter, op.getLoc(), operands[3]);
 
     auto newOp = rewriter.create<mlir::openshmem::CtxAtomicFetchAndOp>(
@@ -688,8 +688,7 @@ struct ConvertCtxAtomicFetchAndPattern
 };
 
 // shmem_ctx_atomic_fetch_or
-struct ConvertCtxAtomicFetchOrPattern
-    : public OpRewritePattern<::cir::CallOp> {
+struct ConvertCtxAtomicFetchOrPattern : public OpRewritePattern<::cir::CallOp> {
   using OpRewritePattern<::cir::CallOp>::OpRewritePattern;
 
   LogicalResult matchAndRewrite(::cir::CallOp op,
@@ -705,7 +704,7 @@ struct ConvertCtxAtomicFetchOrPattern
     auto ctx = convertToCtx(rewriter, op.getLoc(), operands[0]);
     auto dest = convertPtrToMemRef(rewriter, op.getLoc(), operands[1]);
     auto value = convertToAnyType(rewriter, op.getLoc(), operands[2],
-                                   rewriter.getI32Type());
+                                  rewriter.getI32Type());
     auto pe = convertToI32(rewriter, op.getLoc(), operands[3]);
 
     auto newOp = rewriter.create<mlir::openshmem::CtxAtomicFetchOrOp>(
@@ -736,11 +735,11 @@ struct ConvertCtxAtomicOrPattern : public OpRewritePattern<::cir::CallOp> {
     auto ctx = convertToCtx(rewriter, op.getLoc(), operands[0]);
     auto dest = convertPtrToMemRef(rewriter, op.getLoc(), operands[1]);
     auto value = convertToAnyType(rewriter, op.getLoc(), operands[2],
-                                   rewriter.getI32Type());
+                                  rewriter.getI32Type());
     auto pe = convertToI32(rewriter, op.getLoc(), operands[3]);
 
     rewriter.replaceOpWithNewOp<mlir::openshmem::CtxAtomicOrOp>(op, ctx, dest,
-                                                                 value, pe);
+                                                                value, pe);
     return success();
   }
 };
@@ -763,7 +762,7 @@ struct ConvertCtxAtomicFetchXorPattern
     auto ctx = convertToCtx(rewriter, op.getLoc(), operands[0]);
     auto dest = convertPtrToMemRef(rewriter, op.getLoc(), operands[1]);
     auto value = convertToAnyType(rewriter, op.getLoc(), operands[2],
-                                   rewriter.getI32Type());
+                                  rewriter.getI32Type());
     auto pe = convertToI32(rewriter, op.getLoc(), operands[3]);
 
     auto newOp = rewriter.create<mlir::openshmem::CtxAtomicFetchXorOp>(
@@ -794,21 +793,22 @@ struct ConvertCtxAtomicXorPattern : public OpRewritePattern<::cir::CallOp> {
     auto ctx = convertToCtx(rewriter, op.getLoc(), operands[0]);
     auto dest = convertPtrToMemRef(rewriter, op.getLoc(), operands[1]);
     auto value = convertToAnyType(rewriter, op.getLoc(), operands[2],
-                                   rewriter.getI32Type());
+                                  rewriter.getI32Type());
     auto pe = convertToI32(rewriter, op.getLoc(), operands[3]);
 
     rewriter.replaceOpWithNewOp<mlir::openshmem::CtxAtomicXorOp>(op, ctx, dest,
-                                                                  value, pe);
+                                                                 value, pe);
     return success();
   }
 };
 
 //===----------------------------------------------------------------------===//
-// Non-Blocking Atomic Operations  
+// Non-Blocking Atomic Operations
 //===----------------------------------------------------------------------===//
 
 // Note: NBI (non-blocking) atomic operations follow the same pattern as
-// blocking ones but use _nbi suffix operations. Implementing the most common ones:
+// blocking ones but use _nbi suffix operations. Implementing the most common
+// ones:
 
 // shmem_atomic_fetch_nbi
 struct ConvertAtomicFetchNbiPattern : public OpRewritePattern<::cir::CallOp> {
@@ -877,9 +877,9 @@ struct ConvertAtomicCompareSwapNbiPattern
     auto fetch_ptr = convertPtrToMemRef(rewriter, op.getLoc(), operands[0]);
     auto dest = convertPtrToMemRef(rewriter, op.getLoc(), operands[1]);
     auto cond = convertToAnyType(rewriter, op.getLoc(), operands[2],
-                                  rewriter.getI32Type());
+                                 rewriter.getI32Type());
     auto value = convertToAnyType(rewriter, op.getLoc(), operands[3],
-                                   rewriter.getI32Type());
+                                  rewriter.getI32Type());
     auto pe = convertToI32(rewriter, op.getLoc(), operands[4]);
 
     rewriter.replaceOpWithNewOp<mlir::openshmem::AtomicCompareSwapNbiOp>(
@@ -907,9 +907,9 @@ struct ConvertCtxAtomicCompareSwapNbiPattern
     auto fetch_ptr = convertPtrToMemRef(rewriter, op.getLoc(), operands[1]);
     auto dest = convertPtrToMemRef(rewriter, op.getLoc(), operands[2]);
     auto cond = convertToAnyType(rewriter, op.getLoc(), operands[3],
-                                  rewriter.getI32Type());
+                                 rewriter.getI32Type());
     auto value = convertToAnyType(rewriter, op.getLoc(), operands[4],
-                                   rewriter.getI32Type());
+                                  rewriter.getI32Type());
     auto pe = convertToI32(rewriter, op.getLoc(), operands[5]);
 
     rewriter.replaceOpWithNewOp<mlir::openshmem::CtxAtomicCompareSwapNbiOp>(
@@ -934,7 +934,7 @@ struct ConvertAtomicSwapNbiPattern : public OpRewritePattern<::cir::CallOp> {
     auto fetch_ptr = convertPtrToMemRef(rewriter, op.getLoc(), operands[0]);
     auto dest = convertPtrToMemRef(rewriter, op.getLoc(), operands[1]);
     auto value = convertToAnyType(rewriter, op.getLoc(), operands[2],
-                                   rewriter.getI32Type());
+                                  rewriter.getI32Type());
     auto pe = convertToI32(rewriter, op.getLoc(), operands[3]);
 
     rewriter.replaceOpWithNewOp<mlir::openshmem::AtomicSwapNbiOp>(
@@ -944,8 +944,7 @@ struct ConvertAtomicSwapNbiPattern : public OpRewritePattern<::cir::CallOp> {
 };
 
 // shmem_ctx_atomic_swap_nbi
-struct ConvertCtxAtomicSwapNbiPattern
-    : public OpRewritePattern<::cir::CallOp> {
+struct ConvertCtxAtomicSwapNbiPattern : public OpRewritePattern<::cir::CallOp> {
   using OpRewritePattern<::cir::CallOp>::OpRewritePattern;
 
   LogicalResult matchAndRewrite(::cir::CallOp op,
@@ -962,7 +961,7 @@ struct ConvertCtxAtomicSwapNbiPattern
     auto fetch_ptr = convertPtrToMemRef(rewriter, op.getLoc(), operands[1]);
     auto dest = convertPtrToMemRef(rewriter, op.getLoc(), operands[2]);
     auto value = convertToAnyType(rewriter, op.getLoc(), operands[3],
-                                   rewriter.getI32Type());
+                                  rewriter.getI32Type());
     auto pe = convertToI32(rewriter, op.getLoc(), operands[4]);
 
     rewriter.replaceOpWithNewOp<mlir::openshmem::CtxAtomicSwapNbiOp>(
@@ -1040,7 +1039,7 @@ struct ConvertAtomicFetchAddNbiPattern
     auto fetch_ptr = convertPtrToMemRef(rewriter, op.getLoc(), operands[0]);
     auto dest = convertPtrToMemRef(rewriter, op.getLoc(), operands[1]);
     auto value = convertToAnyType(rewriter, op.getLoc(), operands[2],
-                                   rewriter.getI32Type());
+                                  rewriter.getI32Type());
     auto pe = convertToI32(rewriter, op.getLoc(), operands[3]);
 
     rewriter.replaceOpWithNewOp<mlir::openshmem::AtomicFetchAddNbiOp>(
@@ -1068,7 +1067,7 @@ struct ConvertCtxAtomicFetchAddNbiPattern
     auto fetch_ptr = convertPtrToMemRef(rewriter, op.getLoc(), operands[1]);
     auto dest = convertPtrToMemRef(rewriter, op.getLoc(), operands[2]);
     auto value = convertToAnyType(rewriter, op.getLoc(), operands[3],
-                                   rewriter.getI32Type());
+                                  rewriter.getI32Type());
     auto pe = convertToI32(rewriter, op.getLoc(), operands[4]);
 
     rewriter.replaceOpWithNewOp<mlir::openshmem::CtxAtomicFetchAddNbiOp>(
@@ -1095,7 +1094,7 @@ struct ConvertAtomicFetchAndNbiPattern
     auto fetch_ptr = convertPtrToMemRef(rewriter, op.getLoc(), operands[0]);
     auto dest = convertPtrToMemRef(rewriter, op.getLoc(), operands[1]);
     auto value = convertToAnyType(rewriter, op.getLoc(), operands[2],
-                                   rewriter.getI32Type());
+                                  rewriter.getI32Type());
     auto pe = convertToI32(rewriter, op.getLoc(), operands[3]);
 
     rewriter.replaceOpWithNewOp<mlir::openshmem::AtomicFetchAndNbiOp>(
@@ -1123,7 +1122,7 @@ struct ConvertCtxAtomicFetchAndNbiPattern
     auto fetch_ptr = convertPtrToMemRef(rewriter, op.getLoc(), operands[1]);
     auto dest = convertPtrToMemRef(rewriter, op.getLoc(), operands[2]);
     auto value = convertToAnyType(rewriter, op.getLoc(), operands[3],
-                                   rewriter.getI32Type());
+                                  rewriter.getI32Type());
     auto pe = convertToI32(rewriter, op.getLoc(), operands[4]);
 
     rewriter.replaceOpWithNewOp<mlir::openshmem::CtxAtomicFetchAndNbiOp>(
@@ -1133,8 +1132,7 @@ struct ConvertCtxAtomicFetchAndNbiPattern
 };
 
 // shmem_atomic_fetch_or_nbi
-struct ConvertAtomicFetchOrNbiPattern
-    : public OpRewritePattern<::cir::CallOp> {
+struct ConvertAtomicFetchOrNbiPattern : public OpRewritePattern<::cir::CallOp> {
   using OpRewritePattern<::cir::CallOp>::OpRewritePattern;
 
   LogicalResult matchAndRewrite(::cir::CallOp op,
@@ -1150,7 +1148,7 @@ struct ConvertAtomicFetchOrNbiPattern
     auto fetch_ptr = convertPtrToMemRef(rewriter, op.getLoc(), operands[0]);
     auto dest = convertPtrToMemRef(rewriter, op.getLoc(), operands[1]);
     auto value = convertToAnyType(rewriter, op.getLoc(), operands[2],
-                                   rewriter.getI32Type());
+                                  rewriter.getI32Type());
     auto pe = convertToI32(rewriter, op.getLoc(), operands[3]);
 
     rewriter.replaceOpWithNewOp<mlir::openshmem::AtomicFetchOrNbiOp>(
@@ -1178,7 +1176,7 @@ struct ConvertCtxAtomicFetchOrNbiPattern
     auto fetch_ptr = convertPtrToMemRef(rewriter, op.getLoc(), operands[1]);
     auto dest = convertPtrToMemRef(rewriter, op.getLoc(), operands[2]);
     auto value = convertToAnyType(rewriter, op.getLoc(), operands[3],
-                                   rewriter.getI32Type());
+                                  rewriter.getI32Type());
     auto pe = convertToI32(rewriter, op.getLoc(), operands[4]);
 
     rewriter.replaceOpWithNewOp<mlir::openshmem::CtxAtomicFetchOrNbiOp>(
@@ -1205,7 +1203,7 @@ struct ConvertAtomicFetchXorNbiPattern
     auto fetch_ptr = convertPtrToMemRef(rewriter, op.getLoc(), operands[0]);
     auto dest = convertPtrToMemRef(rewriter, op.getLoc(), operands[1]);
     auto value = convertToAnyType(rewriter, op.getLoc(), operands[2],
-                                   rewriter.getI32Type());
+                                  rewriter.getI32Type());
     auto pe = convertToI32(rewriter, op.getLoc(), operands[3]);
 
     rewriter.replaceOpWithNewOp<mlir::openshmem::AtomicFetchXorNbiOp>(
@@ -1233,7 +1231,7 @@ struct ConvertCtxAtomicFetchXorNbiPattern
     auto fetch_ptr = convertPtrToMemRef(rewriter, op.getLoc(), operands[1]);
     auto dest = convertPtrToMemRef(rewriter, op.getLoc(), operands[2]);
     auto value = convertToAnyType(rewriter, op.getLoc(), operands[3],
-                                   rewriter.getI32Type());
+                                  rewriter.getI32Type());
     auto pe = convertToI32(rewriter, op.getLoc(), operands[4]);
 
     rewriter.replaceOpWithNewOp<mlir::openshmem::CtxAtomicFetchXorNbiOp>(
