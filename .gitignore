@@ -4,6 +4,7 @@ build
 llvm-project
 .vscode
 .DS_Store
+openshmem-runtime 
 
 CMakeLists.txt.user
 CMakeCache.txt
