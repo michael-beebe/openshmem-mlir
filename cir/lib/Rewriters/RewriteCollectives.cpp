@@ -13,6 +13,9 @@ using namespace mlir::openshmem;
 // CIR Collective Patterns
 //===----------------------------------------------------------------------===//
 
+//===----------------------------------------------------------------------===//
+// BroadcastOp Pattern
+//===----------------------------------------------------------------------===//
 class ConvertBroadcastPattern : public OpRewritePattern<::cir::CallOp> {
 public:
   using OpRewritePattern<::cir::CallOp>::OpRewritePattern;
@@ -34,6 +37,9 @@ public:
   }
 };
 
+//===----------------------------------------------------------------------===//
+// CollectOp Pattern
+//===----------------------------------------------------------------------===//
 class ConvertCollectPattern : public OpRewritePattern<::cir::CallOp> {
 public:
   using OpRewritePattern<::cir::CallOp>::OpRewritePattern;
@@ -55,6 +61,9 @@ public:
   }
 };
 
+//===----------------------------------------------------------------------===//
+// FCollectOp Pattern
+//===----------------------------------------------------------------------===//
 class ConvertFCollectPattern : public OpRewritePattern<::cir::CallOp> {
 public:
   using OpRewritePattern<::cir::CallOp>::OpRewritePattern;
@@ -76,6 +85,9 @@ public:
   }
 };
 
+//===----------------------------------------------------------------------===//
+// AlltoallOp Pattern
+//===----------------------------------------------------------------------===//
 class ConvertAlltoallPattern : public OpRewritePattern<::cir::CallOp> {
 public:
   using OpRewritePattern<::cir::CallOp>::OpRewritePattern;
@@ -97,6 +109,9 @@ public:
   }
 };
 
+//===----------------------------------------------------------------------===//
+// AlltoallsOp Pattern
+//===----------------------------------------------------------------------===//
 class ConvertAlltoallsPattern : public OpRewritePattern<::cir::CallOp> {
 public:
   using OpRewritePattern<::cir::CallOp>::OpRewritePattern;
@@ -118,6 +133,13 @@ public:
   }
 };
 
+//===----------------------------------------------------------------------===//
+// Reduction Patterns
+//===----------------------------------------------------------------------===//
+
+//===----------------------------------------------------------------------===//
+// SumReduceOp Pattern
+//===----------------------------------------------------------------------===//
 class ConvertSumReducePattern : public OpRewritePattern<::cir::CallOp> {
 public:
   using OpRewritePattern<::cir::CallOp>::OpRewritePattern;
@@ -139,6 +161,9 @@ public:
   }
 };
 
+//===----------------------------------------------------------------------===//
+// MaxReduceOp Pattern
+//===----------------------------------------------------------------------===//
 class ConvertMaxReducePattern : public OpRewritePattern<::cir::CallOp> {
 public:
   using OpRewritePattern<::cir::CallOp>::OpRewritePattern;
@@ -160,6 +185,9 @@ public:
   }
 };
 
+//===----------------------------------------------------------------------===//
+// MinReduceOp Pattern
+//===----------------------------------------------------------------------===//
 class ConvertMinReducePattern : public OpRewritePattern<::cir::CallOp> {
 public:
   using OpRewritePattern<::cir::CallOp>::OpRewritePattern;
@@ -181,6 +209,9 @@ public:
   }
 };
 
+//===----------------------------------------------------------------------===//
+// ProdReduceOp Pattern
+//===----------------------------------------------------------------------===//
 class ConvertProdReducePattern : public OpRewritePattern<::cir::CallOp> {
 public:
   using OpRewritePattern<::cir::CallOp>::OpRewritePattern;
@@ -202,6 +233,9 @@ public:
   }
 };
 
+//===----------------------------------------------------------------------===//
+// AndReduceOp Pattern
+//===----------------------------------------------------------------------===//
 class ConvertAndReducePattern : public OpRewritePattern<::cir::CallOp> {
 public:
   using OpRewritePattern<::cir::CallOp>::OpRewritePattern;
@@ -223,6 +257,9 @@ public:
   }
 };
 
+//===----------------------------------------------------------------------===////
+// OrReduceOp Pattern
+//===----------------------------------------------------------------------===//
 class ConvertOrReducePattern : public OpRewritePattern<::cir::CallOp> {
 public:
   using OpRewritePattern<::cir::CallOp>::OpRewritePattern;
@@ -244,6 +281,9 @@ public:
   }
 };
 
+//===----------------------------------------------------------------------===//
+// XorReduceOp Pattern
+//===----------------------------------------------------------------------===//
 class ConvertXorReducePattern : public OpRewritePattern<::cir::CallOp> {
 public:
   using OpRewritePattern<::cir::CallOp>::OpRewritePattern;
@@ -286,3 +326,4 @@ void populateCIRToOpenSHMEMCollectivePatterns(RewritePatternSet &patterns) {
 } // namespace cir
 } // namespace openshmem
 } // namespace mlir
+
