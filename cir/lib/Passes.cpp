@@ -138,6 +138,13 @@ static const llvm::StringMap<OpenSHMEMAPICategory> openSHMEMAPIMap = {
     {"shmem_wait_until_some", OpenSHMEMAPICategory::Pt2PtSync},
     {"shmem_test_all", OpenSHMEMAPICategory::Pt2PtSync},
     {"shmem_test_any", OpenSHMEMAPICategory::Pt2PtSync},
+    {"shmem_test_some", OpenSHMEMAPICategory::Pt2PtSync},
+    {"shmem_wait_until_all_vector", OpenSHMEMAPICategory::Pt2PtSync},
+    {"shmem_wait_until_any_vector", OpenSHMEMAPICategory::Pt2PtSync},
+    {"shmem_wait_until_some_vector", OpenSHMEMAPICategory::Pt2PtSync},
+    {"shmem_test_all_vector", OpenSHMEMAPICategory::Pt2PtSync},
+    {"shmem_test_any_vector", OpenSHMEMAPICategory::Pt2PtSync},
+    {"shmem_test_some_vector", OpenSHMEMAPICategory::Pt2PtSync},
     {"shmem_signal_wait_until", OpenSHMEMAPICategory::Pt2PtSync},
 };
 

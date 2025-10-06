@@ -34,6 +34,7 @@ void populateCIRToOpenSHMEMTeamPatterns(RewritePatternSet &patterns);
 void populateCIRToOpenSHMEMContextPatterns(RewritePatternSet &patterns);
 void populateCIRToOpenSHMEMCollectivePatterns(RewritePatternSet &patterns);
 void populateCIRToOpenSHMEMRMAPatterns(RewritePatternSet &patterns);
+void populateCIRToOpenSHMEMPt2ptSyncPatterns(RewritePatternSet &patterns);
 
 void populateCIRToOpenSHMEMConversionPatterns(RewritePatternSet &patterns) {
   populateCIRToOpenSHMEMSetupPatterns(patterns);
@@ -43,6 +44,7 @@ void populateCIRToOpenSHMEMConversionPatterns(RewritePatternSet &patterns) {
   populateCIRToOpenSHMEMContextPatterns(patterns);
   populateCIRToOpenSHMEMCollectivePatterns(patterns);
   populateCIRToOpenSHMEMRMAPatterns(patterns);
+  populateCIRToOpenSHMEMPt2ptSyncPatterns(patterns);
 }
 
 } // namespace cir
