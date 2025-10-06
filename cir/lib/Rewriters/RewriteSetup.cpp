@@ -74,7 +74,11 @@ struct ConvertShmemMyPePattern : public OpRewritePattern<::cir::CallOp> {
     Type i32Type = rewriter.getI32Type();
     auto myPeOp = rewriter.create<openshmem::MyPeOp>(callOp.getLoc(), i32Type);
 
-    rewriter.replaceOp(callOp, myPeOp.getResult());
+    // Cast the result back to CIR type to match the original return type
+    auto resultCast = rewriter.create<UnrealizedConversionCastOp>(
+        callOp.getLoc(), callOp.getResultTypes(), myPeOp.getResult());
+
+    rewriter.replaceOp(callOp, resultCast.getResult(0));
     return success();
   }
 };
@@ -93,7 +97,11 @@ struct ConvertShmemNPesPattern : public OpRewritePattern<::cir::CallOp> {
     Type i32Type = rewriter.getI32Type();
     auto nPesOp = rewriter.create<openshmem::NPesOp>(callOp.getLoc(), i32Type);
 
-    rewriter.replaceOp(callOp, nPesOp.getResult());
+    // Cast the result back to CIR type to match the original return type
+    auto resultCast = rewriter.create<UnrealizedConversionCastOp>(
+        callOp.getLoc(), callOp.getResultTypes(), nPesOp.getResult());
+
+    rewriter.replaceOp(callOp, resultCast.getResult(0));
     return success();
   }
 };

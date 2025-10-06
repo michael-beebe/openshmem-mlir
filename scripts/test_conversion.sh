@@ -23,7 +23,7 @@ fi
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BUILD_DIR="${PROJECT_ROOT}/build"
 TEST_DIR="${PROJECT_ROOT}/test"
-OPENSHMEM_OPT="${BUILD_DIR}/tools/openshmem-opt/openshmem-opt"
+SHMEM_MLIR_OPT="${BUILD_DIR}/tools/shmem-mlir-opt/shmem-mlir-opt"
 
 echo -e "${BLUE}╔════════════════════════════════════════════════════════════╗${NC}"
 echo -e "${BLUE}║   OpenSHMEM MLIR Comprehensive Conversion Test Suite       ║${NC}"
@@ -35,9 +35,9 @@ if [[ ${VERBOSE} -eq 1 ]]; then
     echo ""
 fi
 
-# Check if openshmem-opt exists
-if [[ ! -f "${OPENSHMEM_OPT}" ]]; then
-    echo -e "${RED}Error: openshmem-opt not found at ${OPENSHMEM_OPT}${NC}"
+# Check if shmem-mlir-opt exists
+if [[ ! -f "${SHMEM_MLIR_OPT}" ]]; then
+    echo -e "${RED}Error: shmem-mlir-opt not found at ${SHMEM_MLIR_OPT}${NC}"
     echo "Please build the project first: ./scripts/build_openshmem_mlir.sh"
     exit 1
 fi
@@ -57,7 +57,7 @@ run_test() {
     
     # Run the test
     local output
-    if output=$("${OPENSHMEM_OPT}" "${test_file}" ${pass_flags} 2>&1); then
+    if output=$("${SHMEM_MLIR_OPT}" "${test_file}" ${pass_flags} 2>&1); then
         echo -e "  ${GREEN}✓${NC} ${test_name}"
         
         # If verbose mode, show before and after

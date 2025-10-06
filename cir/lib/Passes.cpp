@@ -251,6 +251,22 @@ struct ConvertCIRToOpenSHMEMPass
     if (failed(applyPartialConversion(module, target, std::move(patterns)))) {
       signalPassFailure();
     }
+
+    // Clean up unused CIR function declarations for OpenSHMEM API functions
+    // These are no longer needed after conversion and can cause symbol conflicts
+    SmallVector<Operation *> toErase;
+    module.walk([&](::cir::FuncOp funcOp) {
+      auto funcName = funcOp.getSymName();
+      if (isOpenSHMEMAPICall(funcName) && funcOp.isPrivate() && 
+          funcOp.getBody().empty()) {
+        // This is an unused OpenSHMEM API declaration, mark for removal
+        toErase.push_back(funcOp);
+      }
+    });
+    
+    for (Operation *op : toErase) {
+      op->erase();
+    }
   }
 };
 

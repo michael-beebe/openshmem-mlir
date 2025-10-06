@@ -6,8 +6,8 @@ set -euo pipefail
 #
 # This script demonstrates the full compilation flow:
 #   1. C code → ClangIR (using clang -fclangir)
-#   2. CIR → OpenSHMEM MLIR (using openshmem-opt)
-#   3. OpenSHMEM MLIR → LLVM MLIR (using openshmem-opt)
+#   2. CIR → OpenSHMEM MLIR (using shmem-cir-opt)
+#   3. OpenSHMEM MLIR → LLVM MLIR (using shmem-cir-opt)
 #   4. LLVM MLIR → LLVM IR (using mlir-translate)
 #   5. LLVM IR → Binary (using clang with OpenSHMEM runtime)
 
@@ -15,7 +15,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"/.. && pwd -P)"
 
 # Paths
 LLVM_BUILD="${ROOT_DIR}/llvm-project/build-release-21.x"
-OPENSHMEM_OPT="${ROOT_DIR}/build/tools/openshmem-opt/openshmem-opt"
+SHMEM_CIR_OPT="${ROOT_DIR}/build/tools/shmem-cir-opt/shmem-cir-opt"
 SOS_DIR="${ROOT_DIR}/openshmem-runtime/SOS-v1.5.2"
 
 # Check prerequisites
@@ -24,8 +24,8 @@ if [[ ! -x "${LLVM_BUILD}/bin/clang" ]]; then
   exit 1
 fi
 
-if [[ ! -x "${OPENSHMEM_OPT}" ]]; then
-  echo "ERROR: openshmem-opt not found. Run ./scripts/build_openshmem_mlir.sh first" >&2
+if [[ ! -x "${SHMEM_CIR_OPT}" ]]; then
+  echo "ERROR: shmem-cir-opt not found. Run ./scripts/build_openshmem_mlir.sh first" >&2
   exit 1
 fi
 
@@ -77,7 +77,7 @@ echo ""
 
 # Step 2: CIR → OpenSHMEM MLIR
 echo "Step 2: ClangIR → OpenSHMEM MLIR..."
-"${OPENSHMEM_OPT}" \
+"${SHMEM_CIR_OPT}" \
   "${OUTPUT_DIR}/${BASENAME}.cir" \
   --convert-cir-to-openshmem \
   -o "${OUTPUT_DIR}/${BASENAME}.openshmem.mlir"
@@ -86,7 +86,7 @@ echo ""
 
 # Step 3: OpenSHMEM MLIR → LLVM MLIR
 echo "Step 3: OpenSHMEM MLIR → LLVM MLIR..."
-"${OPENSHMEM_OPT}" \
+"${SHMEM_CIR_OPT}" \
   "${OUTPUT_DIR}/${BASENAME}.openshmem.mlir" \
   --convert-openshmem-to-llvm \
   -o "${OUTPUT_DIR}/${BASENAME}.llvm.mlir"

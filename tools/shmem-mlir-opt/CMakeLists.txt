@@ -1,12 +1,12 @@
-add_executable(openshmem-opt
-  openshmem-opt.cpp
+add_executable(shmem-mlir-opt
+  shmem-mlir-opt.cpp
 )
 
 # Link against MLIR driver components and the built OpenSHMEM libraries so
 # the dialect and passes are available inside the tool.
-mlir_check_all_link_libraries(openshmem-opt)
+mlir_check_all_link_libraries(shmem-mlir-opt)
 
-target_link_libraries(openshmem-opt
+target_link_libraries(shmem-mlir-opt
   PRIVATE
     MLIRAsmParser
     MLIRParser
@@ -33,7 +33,7 @@ target_link_libraries(openshmem-opt
 # Link the OpenSHMEM libraries (use the CMake targets so transitive
 # dependencies and link ordering are handled by CMake). Place them after
 # MLIR libraries so their object files are available to resolve symbols.
-target_link_libraries(openshmem-opt
+target_link_libraries(shmem-mlir-opt
   PRIVATE
     MLIROpenSHMEMToLLVM
     MLIROpenSHMEMDialect
@@ -43,7 +43,7 @@ target_link_libraries(openshmem-opt
 )
 
 # Make sure the include path contains generated headers
-target_include_directories(openshmem-opt PRIVATE
+target_include_directories(shmem-mlir-opt PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/../../include
   ${CMAKE_CURRENT_SOURCE_DIR}/../../cir/include
   ${CMAKE_CURRENT_BINARY_DIR}/../../include
@@ -52,5 +52,5 @@ target_include_directories(openshmem-opt PRIVATE
 
 # Export symbols for plugin capability if needed
 if(MLIR_EXPORT_SYMBOLS_FOR_PLUGINS)
-  export_executable_symbols_for_plugins(openshmem-opt)
+  export_executable_symbols_for_plugins(shmem-mlir-opt)
 endif()
