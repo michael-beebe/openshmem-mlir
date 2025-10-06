@@ -6,6 +6,7 @@ add_mlir_library(MLIROpenSHMEMCIRRewriters
   RewriteTeams.cpp
   RewriteCollectives.cpp
   RewriteContexts.cpp
+  RewriteRMA.cpp
   Utils.cpp
 
   ADDITIONAL_HEADER_DIRS

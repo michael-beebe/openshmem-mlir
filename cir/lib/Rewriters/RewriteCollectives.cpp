@@ -326,4 +326,3 @@ void populateCIRToOpenSHMEMCollectivePatterns(RewritePatternSet &patterns) {
 } // namespace cir
 } // namespace openshmem
 } // namespace mlir
-
