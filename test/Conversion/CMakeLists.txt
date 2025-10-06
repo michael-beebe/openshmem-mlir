@@ -1,1 +1,2 @@
+add_subdirectory(CIRToOpenSHMEM)
 add_subdirectory(OpenSHMEMToLLVM)
