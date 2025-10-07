@@ -67,60 +67,60 @@ if [[ ${HAS_RUNTIME} -eq 1 ]]; then
   oshcc -fclangir -emit-cir \
     -Wno-unused-command-line-argument \
     "${INPUT_C}" \
-    -o "${OUTPUT_DIR}/${BASENAME}.cir"
+    -o "${OUTPUT_DIR}/1.${BASENAME}.cir"
 else
   # Fallback to direct clang (may not find shmem.h)
   "${LLVM_BUILD}/bin/clang" -fclangir -emit-cir \
     "${INPUT_C}" \
-    -o "${OUTPUT_DIR}/${BASENAME}.cir"
+    -o "${OUTPUT_DIR}/1.${BASENAME}.cir"
 fi
-echo "  Generated: ${OUTPUT_DIR}/${BASENAME}.cir"
+echo "  Generated: ${OUTPUT_DIR}/1.${BASENAME}.cir"
 echo ""
 
 # Step 2: CIR → OpenSHMEM MLIR
 echo "Step 2: ClangIR → OpenSHMEM MLIR..."
 "${SHMEM_CIR_OPT}" \
-  "${OUTPUT_DIR}/${BASENAME}.cir" \
+  "${OUTPUT_DIR}/1.${BASENAME}.cir" \
   --convert-cir-to-openshmem \
-  -o "${OUTPUT_DIR}/${BASENAME}.openshmem.mlir"
-echo "  Generated: ${OUTPUT_DIR}/${BASENAME}.openshmem.mlir"
+  -o "${OUTPUT_DIR}/2.${BASENAME}.openshmem.mlir"
+echo "  Generated: ${OUTPUT_DIR}/2.${BASENAME}.openshmem.mlir"
 echo ""
 
 # Step 3: Convert CIR to LLVM MLIR (leaving OpenSHMEM ops)
 echo "Step 3: Converting CIR to LLVM MLIR..."
 "${SHMEM_CIR_OPT}" \
-  "${OUTPUT_DIR}/${BASENAME}.openshmem.mlir" \
+  "${OUTPUT_DIR}/2.${BASENAME}.openshmem.mlir" \
   --cir-to-llvm \
-  -o "${OUTPUT_DIR}/${BASENAME}.partial-llvm.mlir"
-echo "  Generated: ${OUTPUT_DIR}/${BASENAME}.partial-llvm.mlir"
+  -o "${OUTPUT_DIR}/3.${BASENAME}.partial-llvm.mlir"
+echo "  Generated: ${OUTPUT_DIR}/3.${BASENAME}.partial-llvm.mlir"
 echo ""
 
 # Step 4: Convert OpenSHMEM to LLVM (now all types are LLVM types)
 echo "Step 4: Converting OpenSHMEM to LLVM..."
 "${SHMEM_CIR_OPT}" \
-  "${OUTPUT_DIR}/${BASENAME}.partial-llvm.mlir" \
+  "${OUTPUT_DIR}/3.${BASENAME}.partial-llvm.mlir" \
   --convert-openshmem-to-llvm \
-  -o "${OUTPUT_DIR}/${BASENAME}.llvm-with-casts.mlir"
-echo "  Generated: ${OUTPUT_DIR}/${BASENAME}.llvm-with-casts.mlir"
+  -o "${OUTPUT_DIR}/4.${BASENAME}.llvm-with-casts.mlir"
+echo "  Generated: ${OUTPUT_DIR}/4.${BASENAME}.llvm-with-casts.mlir"
 echo ""
 
 # Step 5: Reconcile unrealized casts
 echo "Step 5: Reconciling unrealized casts..."
 "${LLVM_BUILD}/bin/mlir-opt" \
   --allow-unregistered-dialect \
-  "${OUTPUT_DIR}/${BASENAME}.llvm-with-casts.mlir" \
+  "${OUTPUT_DIR}/4.${BASENAME}.llvm-with-casts.mlir" \
   --reconcile-unrealized-casts \
-  -o "${OUTPUT_DIR}/${BASENAME}.llvm.mlir"
-echo "  Generated: ${OUTPUT_DIR}/${BASENAME}.llvm.mlir"
+  -o "${OUTPUT_DIR}/5.${BASENAME}.llvm.mlir"
+echo "  Generated: ${OUTPUT_DIR}/5.${BASENAME}.llvm.mlir"
 echo ""
 
 # Step 6: LLVM MLIR → LLVM IR
 echo "Step 6: LLVM MLIR → LLVM IR..."
 "${LLVM_BUILD}/bin/mlir-translate" \
   --mlir-to-llvmir \
-  "${OUTPUT_DIR}/${BASENAME}.llvm.mlir" \
-  -o "${OUTPUT_DIR}/${BASENAME}.ll"
-echo "  Generated: ${OUTPUT_DIR}/${BASENAME}.ll"
+  "${OUTPUT_DIR}/5.${BASENAME}.llvm.mlir" \
+  -o "${OUTPUT_DIR}/6.${BASENAME}.ll"
+echo "  Generated: ${OUTPUT_DIR}/6.${BASENAME}.ll"
 echo ""
 
 # Step 7: LLVM IR → Assembly (requires OpenSHMEM runtime)
@@ -129,36 +129,36 @@ if [[ ${HAS_RUNTIME} -eq 1 ]]; then
   
   # Compile LLVM IR to assembly
   "${LLVM_BUILD}/bin/llc" \
-    "${OUTPUT_DIR}/${BASENAME}.ll" \
-    -o "${OUTPUT_DIR}/${BASENAME}.s"
-  echo "  Generated: ${OUTPUT_DIR}/${BASENAME}.s"
+    "${OUTPUT_DIR}/6.${BASENAME}.ll" \
+    -o "${OUTPUT_DIR}/7.${BASENAME}.s"
+  echo "  Generated: ${OUTPUT_DIR}/7.${BASENAME}.s"
   echo ""
   
   # Step 8: Assembly → Object file
   echo "Step 8: Assembly → Object file..."
   "${LLVM_BUILD}/bin/llc" \
     -filetype=obj \
-    "${OUTPUT_DIR}/${BASENAME}.ll" \
-    -o "${OUTPUT_DIR}/${BASENAME}.o"
-  echo "  Generated: ${OUTPUT_DIR}/${BASENAME}.o"
+    "${OUTPUT_DIR}/6.${BASENAME}.ll" \
+    -o "${OUTPUT_DIR}/8.${BASENAME}.o"
+  echo "  Generated: ${OUTPUT_DIR}/8.${BASENAME}.o"
   
   echo ""
   
   # Step 9: Object file → Binary
   echo "Step 9: Object file → Binary (linking)..."
   oshcc \
-    "${OUTPUT_DIR}/${BASENAME}.o" \
-    -o "${OUTPUT_DIR}/${BASENAME}"
-  echo "  Generated: ${OUTPUT_DIR}/${BASENAME} (executable)"
+    "${OUTPUT_DIR}/8.${BASENAME}.o" \
+    -o "${OUTPUT_DIR}/9.${BASENAME}"
+  echo "  Generated: ${OUTPUT_DIR}/9.${BASENAME} (executable)"
   echo ""
   
   echo "=== Compilation Complete! ==="
   echo ""
   echo "Generated files:"
-  ls -lh "${OUTPUT_DIR}/${BASENAME}".{cir,openshmem.mlir,partial-llvm.mlir,llvm-with-casts.mlir,llvm.mlir,ll,s,o} "${OUTPUT_DIR}/${BASENAME}" 2>/dev/null || true
+  ls -lh "${OUTPUT_DIR}"/{1..9}.${BASENAME}.* "${OUTPUT_DIR}/9.${BASENAME}" 2>/dev/null || true
   echo ""
   echo "To run the program:"
-  echo "  oshrun -n 4 ${OUTPUT_DIR}/${BASENAME}"
+  echo "  oshrun -n 4 ${OUTPUT_DIR}/9.${BASENAME}"
   echo ""
 else
   echo "Step 7: LLVM IR → Assembly/Binary (SKIPPED - no runtime)"
@@ -169,10 +169,10 @@ else
   echo "=== Compilation Stopped at LLVM IR ==="
   echo ""
   echo "Generated files (up to LLVM IR):"
-  ls -lh "${OUTPUT_DIR}/${BASENAME}".{cir,openshmem.mlir,partial-llvm.mlir,llvm-with-casts.mlir,llvm.mlir,ll} 2>/dev/null || true
+  ls -lh "${OUTPUT_DIR}"/{1..6}.${BASENAME}.* 2>/dev/null || true
   echo ""
   echo "LLVM IR can be compiled manually with:"
-  echo "  clang ${OUTPUT_DIR}/${BASENAME}.ll -lshmem -o ${OUTPUT_DIR}/${BASENAME}"
+  echo "  clang ${OUTPUT_DIR}/6.${BASENAME}.ll -lshmem -o ${OUTPUT_DIR}/${BASENAME}"
   echo ""
 fi
 
