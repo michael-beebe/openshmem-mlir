@@ -7,22 +7,22 @@ module attributes {cir.triple = "aarch64-unknown-linux-gnu", dlti.dl_spec = #dlt
     %0 = cir.alloca !s32i, !cir.ptr<!s32i>, ["__retval"] {alignment = 4 : i64}
     %1 = cir.alloca !s32i, !cir.ptr<!s32i>, ["me", init] {alignment = 4 : i64}
     %2 = cir.alloca !s32i, !cir.ptr<!s32i>, ["npes", init] {alignment = 4 : i64}
-    openshmem.init
-    %3 = openshmem.my_pe : !s32i
-    cir.store align(4) %3, %1 : !s32i, !cir.ptr<!s32i>
-    %4 = openshmem.n_pes : !s32i
-    cir.store align(4) %4, %2 : !s32i, !cir.ptr<!s32i>
-    %5 = cir.get_global @".str" : !cir.ptr<!cir.array<!u8i x 24>>
-    %6 = cir.cast(array_to_ptrdecay, %5 : !cir.ptr<!cir.array<!u8i x 24>>), !cir.ptr<!u8i>
-    %7 = cir.load align(4) %1 : !cir.ptr<!s32i>, !s32i
-    %8 = cir.load align(4) %2 : !cir.ptr<!s32i>, !s32i
-    %9 = cir.call @printf(%6, %7, %8) : (!cir.ptr<!u8i>, !s32i, !s32i) -> !s32i
-    openshmem.barrier_all
-    openshmem.finalize
-    %10 = cir.const #cir.int<0> : !s32i
-    cir.store %10, %0 : !s32i, !cir.ptr<!s32i>
-    %11 = cir.load %0 : !cir.ptr<!s32i>, !s32i
-    cir.return %11 : !s32i
+    openshmem.region {
+      %5 = openshmem.my_pe : !s32i
+      cir.store align(4) %5, %1 : !s32i, !cir.ptr<!s32i>
+      %6 = openshmem.n_pes : !s32i
+      cir.store align(4) %6, %2 : !s32i, !cir.ptr<!s32i>
+      %7 = cir.get_global @".str" : !cir.ptr<!cir.array<!u8i x 24>>
+      %8 = cir.cast(array_to_ptrdecay, %7 : !cir.ptr<!cir.array<!u8i x 24>>), !cir.ptr<!u8i>
+      %9 = cir.load align(4) %1 : !cir.ptr<!s32i>, !s32i
+      %10 = cir.load align(4) %2 : !cir.ptr<!s32i>, !s32i
+      %11 = cir.call @printf(%8, %9, %10) : (!cir.ptr<!u8i>, !s32i, !s32i) -> !s32i
+      openshmem.barrier_all
+    }
+    %3 = cir.const #cir.int<0> : !s32i
+    cir.store %3, %0 : !s32i, !cir.ptr<!s32i>
+    %4 = cir.load %0 : !cir.ptr<!s32i>, !s32i
+    cir.return %4 : !s32i
   }
 }
 

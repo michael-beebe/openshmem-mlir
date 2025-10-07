@@ -28,7 +28,98 @@ namespace mlir {
 namespace openshmem {
 namespace cir {
 
+/// Pattern to wrap function body in openshmem.region (replaces init/finalize)
+struct WrapFunctionInRegionPattern : public OpRewritePattern<::cir::FuncOp> {
+  using OpRewritePattern::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(::cir::FuncOp funcOp,
+                                PatternRewriter &rewriter) const override {
+    // Only process functions with bodies (not declarations)
+    if (funcOp.getBody().empty())
+      return failure();
+
+    // Check if the function contains shmem_init/finalize calls
+    bool hasInit = false;
+    bool hasFinalize = false;
+    
+    funcOp.walk([&](::cir::CallOp callOp) {
+      auto callee = callOp.getCallee();
+      if (callee) {
+        if (callee.value() == "shmem_init")
+          hasInit = true;
+        else if (callee.value() == "shmem_finalize")
+          hasFinalize = true;
+      }
+    });
+
+    // Only wrap if we found both init and finalize
+    if (!hasInit || !hasFinalize)
+      return failure();
+
+    // Get the function body
+    Block &bodyBlock = funcOp.getBody().front();
+    
+    // Find init and finalize calls to remove them
+    ::cir::CallOp initCall = nullptr;
+    ::cir::CallOp finalizeCall = nullptr;
+    
+    for (auto &op : llvm::make_early_inc_range(bodyBlock)) {
+      if (auto callOp = dyn_cast<::cir::CallOp>(&op)) {
+        auto callee = callOp.getCallee();
+        if (callee) {
+          if (callee.value() == "shmem_init")
+            initCall = callOp;
+          else if (callee.value() == "shmem_finalize")
+            finalizeCall = callOp;
+        }
+      }
+    }
+
+    if (!initCall || !finalizeCall)
+      return failure();
+
+    // Create the region op at the location of the init call
+    rewriter.setInsertionPoint(initCall);
+    auto regionOp = rewriter.create<openshmem::Region>(initCall.getLoc());
+    Block *regionBlock = rewriter.createBlock(&regionOp.getBody());
+
+    // Move all operations between init and finalize into the region
+    bool insideRegion = false;
+    SmallVector<Operation *> opsToMove;
+    
+    for (auto &op : bodyBlock) {
+      if (&op == initCall.getOperation()) {
+        insideRegion = true;
+        continue; // Skip the init call itself
+      }
+      if (&op == finalizeCall.getOperation()) {
+        insideRegion = false;
+        break; // Stop at finalize
+      }
+      if (insideRegion) {
+        opsToMove.push_back(&op);
+      }
+    }
+
+    // Move operations into the region
+    for (Operation *op : opsToMove) {
+      op->moveBefore(regionBlock, regionBlock->end());
+    }
+
+    // Add yield terminator to the region
+    rewriter.setInsertionPointToEnd(regionBlock);
+    rewriter.create<openshmem::YieldOp>(finalizeCall.getLoc());
+
+    // Erase the init and finalize calls
+    rewriter.eraseOp(initCall);
+    rewriter.eraseOp(finalizeCall);
+
+    return success();
+  }
+};
+
 /// Pattern to convert shmem_init() calls to openshmem.init
+/// (This is now only used if not wrapped in a region)
 struct ConvertShmemInitPattern : public OpRewritePattern<::cir::CallOp> {
   using OpRewritePattern::OpRewritePattern;
 
@@ -45,6 +136,7 @@ struct ConvertShmemInitPattern : public OpRewritePattern<::cir::CallOp> {
 };
 
 /// Pattern to convert shmem_finalize() calls to openshmem.finalize
+/// (This is now only used if not wrapped in a region)
 struct ConvertShmemFinalizePattern : public OpRewritePattern<::cir::CallOp> {
   using OpRewritePattern::OpRewritePattern;
 
@@ -104,6 +196,10 @@ struct ConvertShmemNPesPattern : public OpRewritePattern<::cir::CallOp> {
 
 // Pattern registration for setup/query patterns
 void populateCIRToOpenSHMEMSetupPatterns(RewritePatternSet &patterns) {
+  // Add the region wrapping pattern first (higher benefit)
+  patterns.add<WrapFunctionInRegionPattern>(patterns.getContext(), 
+                                            /*benefit=*/2);
+  // Add fallback patterns for individual init/finalize calls
   patterns.add<ConvertShmemInitPattern, ConvertShmemFinalizePattern,
                ConvertShmemMyPePattern, ConvertShmemNPesPattern>(
       patterns.getContext());

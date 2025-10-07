@@ -5,13 +5,13 @@ target triple = "aarch64-unknown-linux-gnu"
 
 @.str = private global [24 x i8] c"Hello from PE %d of %d\0A\00", align 1
 
-declare void @shmem_finalize()
-
 declare void @shmem_barrier_all()
 
 declare i32 @shmem_n_pes()
 
 declare i32 @shmem_my_pe()
+
+declare void @shmem_finalize()
 
 declare void @shmem_init()
 

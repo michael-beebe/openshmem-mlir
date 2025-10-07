@@ -252,6 +252,65 @@ struct ConvertCIRToOpenSHMEMPass
       signalPassFailure();
     }
 
+    // Post-processing: Wrap init/finalize pairs in openshmem.region
+    module.walk([&](::cir::FuncOp funcOp) {
+      if (funcOp.getBody().empty())
+        return;
+
+      Block &bodyBlock = funcOp.getBody().front();
+      
+      // Find init and finalize ops
+      openshmem::InitOp initOp = nullptr;
+      openshmem::FinalizeOp finalizeOp = nullptr;
+      
+      for (auto &op : bodyBlock) {
+        if (auto init = dyn_cast<openshmem::InitOp>(&op))
+          initOp = init;
+        else if (auto finalize = dyn_cast<openshmem::FinalizeOp>(&op))
+          finalizeOp = finalize;
+      }
+
+      if (!initOp || !finalizeOp)
+        return;
+
+      // Create region to wrap the code between init and finalize
+      OpBuilder builder(context);
+      builder.setInsertionPoint(initOp);
+      auto regionOp = builder.create<openshmem::Region>(initOp.getLoc());
+      Block *regionBlock = builder.createBlock(&regionOp.getBody());
+
+      // Move all operations between init and finalize into the region
+      bool insideRegion = false;
+      SmallVector<Operation *> opsToMove;
+      
+      for (auto &op : bodyBlock) {
+        if (&op == initOp.getOperation()) {
+          insideRegion = true;
+          continue; // Skip init itself
+        }
+        if (&op == finalizeOp.getOperation()) {
+          insideRegion = false;
+          break; // Stop at finalize
+        }
+        if (insideRegion) {
+          opsToMove.push_back(&op);
+        }
+      }
+
+      // Move operations into the region
+      for (Operation *op : opsToMove) {
+        op->moveBefore(regionBlock, regionBlock->end());
+      }
+
+      // Add yield terminator to the region
+      builder.setInsertionPointToEnd(regionBlock);
+      builder.create<openshmem::YieldOp>(finalizeOp.getLoc());
+
+      // Erase init and finalize
+      initOp.erase();
+      finalizeOp.erase();
+    });
+
     // Clean up unused CIR function declarations for OpenSHMEM API functions
     // These are no longer needed after conversion and can cause symbol conflicts
     SmallVector<Operation *> toErase;
