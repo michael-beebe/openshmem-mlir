@@ -1,5 +1,10 @@
 !s32i = !cir.int<s, 32>
 module attributes {cir.triple = "aarch64-unknown-linux-gnu", dlti.dl_spec = #dlti.dl_spec<!llvm.ptr<270> = dense<32> : vector<4xi64>, !llvm.ptr<271> = dense<32> : vector<4xi64>, !llvm.ptr<272> = dense<64> : vector<4xi64>, i8 = dense<[8, 32]> : vector<2xi64>, i16 = dense<[16, 32]> : vector<2xi64>, i64 = dense<64> : vector<2xi64>, i128 = dense<128> : vector<2xi64>, !llvm.ptr = dense<64> : vector<4xi64>, i1 = dense<8> : vector<2xi64>, i32 = dense<32> : vector<2xi64>, f16 = dense<16> : vector<2xi64>, f64 = dense<64> : vector<2xi64>, f128 = dense<128> : vector<2xi64>, "dlti.endianness" = "little", "dlti.mangling_mode" = "e", "dlti.legal_int_widths" = array<i32: 32, 64>, "dlti.stack_alignment" = 128 : i64, "dlti.function_pointer_alignment" = #dlti.function_pointer_alignment<32, function_dependent = true>>, llvm.target_triple = "aarch64-unknown-linux-gnu"} {
+  llvm.func @shmem_finalize()
+  llvm.func @shmem_barrier_all()
+  llvm.func @shmem_n_pes() -> i32
+  llvm.func @shmem_my_pe() -> i32
+  llvm.func @shmem_init()
   llvm.mlir.global private @".str"() {addr_space = 0 : i32, alignment = 1 : i64, dso_local} : !llvm.array<24 x i8> {
     %0 = llvm.mlir.undef : !llvm.array<24 x i8>
     %1 = llvm.mlir.constant(72 : i8) : i8
@@ -60,24 +65,26 @@ module attributes {cir.triple = "aarch64-unknown-linux-gnu", dlti.dl_spec = #dlt
     %3 = llvm.alloca %2 x i32 {alignment = 4 : i64} : (i64) -> !llvm.ptr
     %4 = llvm.mlir.constant(1 : i64) : i64
     %5 = llvm.alloca %4 x i32 {alignment = 4 : i64} : (i64) -> !llvm.ptr
-    openshmem.init
-    %6 = openshmem.my_pe : !s32i
-    %7 = builtin.unrealized_conversion_cast %6 : !s32i to i32
-    llvm.store %7, %3 {alignment = 4 : i64} : i32, !llvm.ptr
-    %8 = openshmem.n_pes : !s32i
-    %9 = builtin.unrealized_conversion_cast %8 : !s32i to i32
-    llvm.store %9, %5 {alignment = 4 : i64} : i32, !llvm.ptr
-    %10 = llvm.mlir.addressof @".str" : !llvm.ptr
-    %11 = llvm.getelementptr %10[0] : (!llvm.ptr) -> !llvm.ptr, i8
-    %12 = llvm.load %3 {alignment = 4 : i64} : !llvm.ptr -> i32
-    %13 = llvm.load %5 {alignment = 4 : i64} : !llvm.ptr -> i32
-    %14 = llvm.call @printf(%11, %12, %13) vararg(!llvm.func<i32 (ptr, ...)>) : (!llvm.ptr, i32, i32) -> i32
-    openshmem.barrier_all
-    openshmem.finalize
-    %15 = llvm.mlir.constant(0 : i32) : i32
-    llvm.store %15, %1 {alignment = 4 : i64} : i32, !llvm.ptr
-    %16 = llvm.load %1 {alignment = 4 : i64} : !llvm.ptr -> i32
-    llvm.return %16 : i32
+    llvm.call @shmem_init() : () -> ()
+    %6 = llvm.call @shmem_my_pe() : () -> i32
+    %7 = builtin.unrealized_conversion_cast %6 : i32 to !s32i
+    %8 = builtin.unrealized_conversion_cast %7 : !s32i to i32
+    llvm.store %8, %3 {alignment = 4 : i64} : i32, !llvm.ptr
+    %9 = llvm.call @shmem_n_pes() : () -> i32
+    %10 = builtin.unrealized_conversion_cast %9 : i32 to !s32i
+    %11 = builtin.unrealized_conversion_cast %10 : !s32i to i32
+    llvm.store %11, %5 {alignment = 4 : i64} : i32, !llvm.ptr
+    %12 = llvm.mlir.addressof @".str" : !llvm.ptr
+    %13 = llvm.getelementptr %12[0] : (!llvm.ptr) -> !llvm.ptr, i8
+    %14 = llvm.load %3 {alignment = 4 : i64} : !llvm.ptr -> i32
+    %15 = llvm.load %5 {alignment = 4 : i64} : !llvm.ptr -> i32
+    %16 = llvm.call @printf(%13, %14, %15) vararg(!llvm.func<i32 (ptr, ...)>) : (!llvm.ptr, i32, i32) -> i32
+    llvm.call @shmem_barrier_all() : () -> ()
+    llvm.call @shmem_finalize() : () -> ()
+    %17 = llvm.mlir.constant(0 : i32) : i32
+    llvm.store %17, %1 {alignment = 4 : i64} : i32, !llvm.ptr
+    %18 = llvm.load %1 {alignment = 4 : i64} : !llvm.ptr -> i32
+    llvm.return %18 : i32
   }
 }
 

@@ -114,14 +114,14 @@ def OpenSHMEM_MyPeOp : OpenSHMEM_Op<"my_pe", []> {
     - (none)
 
     Results:
-    - pe: The PE number of the calling PE
+    - pe: The PE number of the calling PE (typically i32 or !cir.int<s,32>)
 
     ```c
     int shmem_my_pe(void);
     ```
   }];
 
-  let results = (outs I32:$pe);
+  let results = (outs AnyType:$pe);
   let assemblyFormat = "attr-dict `:` type($pe)";
 }
 
@@ -139,14 +139,14 @@ def OpenSHMEM_NPesOp : OpenSHMEM_Op<"n_pes", []> {
     - (none)
 
     Results:
-    - n_pes: The total number of PEs
+    - n_pes: The total number of PEs (typically i32 or !cir.int<s,32>)
 
     ```c
     int shmem_n_pes(void);
     ```
   }];
 
-  let results = (outs I32:$n_pes);
+  let results = (outs AnyType:$n_pes);
   let assemblyFormat = "attr-dict `:` type($n_pes)";
 }
 
