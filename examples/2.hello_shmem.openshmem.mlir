@@ -25,4 +25,3 @@ module attributes {cir.triple = "aarch64-unknown-linux-gnu", dlti.dl_spec = #dlt
     cir.return %4 : !s32i
   }
 }
-
