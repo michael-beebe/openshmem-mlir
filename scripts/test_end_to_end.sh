@@ -179,20 +179,20 @@ if [[ ${HAS_RUNTIME} -eq 1 ]]; then
   oshcc -fclangir -emit-cir \
     -Wno-unused-command-line-argument \
     "${INPUT_C}" \
-    -o "${OUTPUT_DIR}/1.${BASENAME}.cir"
+    -o "${OUTPUT_DIR}/1.${BASENAME}.mlir"
 else
   # Fallback to direct clang (may not find shmem.h)
   "${LLVM_BUILD}/bin/clang" -fclangir -emit-cir \
     "${INPUT_C}" \
-    -o "${OUTPUT_DIR}/1.${BASENAME}.cir"
+    -o "${OUTPUT_DIR}/1.${BASENAME}.mlir"
 fi
-echo "  Generated: ${OUTPUT_DIR}/1.${BASENAME}.cir"
+echo "  Generated: ${OUTPUT_DIR}/1.${BASENAME}.mlir"
 echo ""
 
 # Step 2: CIR → OpenSHMEM MLIR
 echo "Step 2: ClangIR → OpenSHMEM MLIR..."
 "${SHMEM_CIR_OPT}" \
-  "${OUTPUT_DIR}/1.${BASENAME}.cir" \
+  "${OUTPUT_DIR}/1.${BASENAME}.mlir" \
   --convert-cir-to-openshmem \
   -o "${OUTPUT_DIR}/2.${BASENAME}.openshmem.mlir"
 echo "  Generated: ${OUTPUT_DIR}/2.${BASENAME}.openshmem.mlir"
