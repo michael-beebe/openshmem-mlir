@@ -10,8 +10,75 @@ set -euo pipefail
 #   3. OpenSHMEM MLIR → LLVM MLIR (using shmem-cir-opt)
 #   4. LLVM MLIR → LLVM IR (using mlir-translate)
 #   5. LLVM IR → Binary (using clang with OpenSHMEM runtime)
+#
+# Usage:
+#   ./test_end_to_end.sh [options] [input_file]
+#
+# Options:
+#   --test <TestName>    Run a specific test by name (e.g., --test HelloWorld)
+#   --clean              Remove tmp/ directory before running
+#
+# Examples:
+#   ./test_end_to_end.sh                                    # Run default test (HelloWorld)
+#   ./test_end_to_end.sh --test HelloWorld                  # Run HelloWorld test
+#   ./test_end_to_end.sh --clean --test HelloWorld          # Clean then run HelloWorld
+#   ./test_end_to_end.sh test/EndToEnd/Atomics/test.c       # Run specific file
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"/.. && pwd -P)"
+
+# Parse command-line arguments
+DO_CLEAN=0
+TEST_NAME_ARG=""
+INPUT_FILE_ARG=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --clean)
+      DO_CLEAN=1
+      shift
+      ;;
+    --test)
+      if [[ -z "${2:-}" ]]; then
+        echo "ERROR: --test requires a test name argument" >&2
+        exit 1
+      fi
+      TEST_NAME_ARG="$2"
+      shift 2
+      ;;
+    --help|-h)
+      echo "Usage: $0 [options] [input_file]"
+      echo ""
+      echo "Options:"
+      echo "  --test <TestName>    Run a specific test by name (e.g., --test HelloWorld)"
+      echo "  --clean              Remove tmp/ directory before running"
+      echo "  --help, -h           Show this help message"
+      echo ""
+      echo "Examples:"
+      echo "  $0                                    # Run default test (HelloWorld)"
+      echo "  $0 --test HelloWorld                  # Run HelloWorld test"
+      echo "  $0 --clean --test HelloWorld          # Clean then run HelloWorld"
+      echo "  $0 test/EndToEnd/Atomics/test.c       # Run specific file"
+      exit 0
+      ;;
+    -*)
+      echo "ERROR: Unknown option: $1" >&2
+      echo "Run '$0 --help' for usage information" >&2
+      exit 1
+      ;;
+    *)
+      INPUT_FILE_ARG="$1"
+      shift
+      ;;
+  esac
+done
+
+# Clean tmp/ directory if requested
+if [[ ${DO_CLEAN} -eq 1 ]]; then
+  echo "Cleaning tmp/ directory..."
+  rm -rf "${ROOT_DIR}/tmp"
+  echo "  Removed: ${ROOT_DIR}/tmp"
+  echo ""
+fi
 
 # Paths
 LLVM_BUILD="${ROOT_DIR}/llvm-project/build-release-21.x"
@@ -48,14 +115,59 @@ else
   echo ""
 fi
 
-# Input file
-INPUT_C="${1:-examples/hello_shmem.c}"
+# Determine input file
+if [[ -n "${TEST_NAME_ARG}" ]]; then
+  # --test flag was used: find the test directory
+  TEST_DIR="${ROOT_DIR}/test/EndToEnd/${TEST_NAME_ARG}"
+  
+  if [[ ! -d "${TEST_DIR}" ]]; then
+    echo "ERROR: Test directory not found: ${TEST_DIR}" >&2
+    exit 1
+  fi
+  
+  # Find the first .c file in the test directory
+  INPUT_C=$(find "${TEST_DIR}" -maxdepth 1 -name "*.c" | head -n 1)
+  
+  if [[ -z "${INPUT_C}" ]]; then
+    echo "ERROR: No .c file found in ${TEST_DIR}" >&2
+    exit 1
+  fi
+  
+  TEST_NAME="${TEST_NAME_ARG}"
+elif [[ -n "${INPUT_FILE_ARG}" ]]; then
+  # Direct file path was provided
+  INPUT_C="${INPUT_FILE_ARG}"
+  
+  if [[ ! -f "${INPUT_C}" ]]; then
+    echo "ERROR: Input file not found: ${INPUT_C}" >&2
+    exit 1
+  fi
+  
+  # Extract test name from path (e.g., HelloWorld/hello_shmem.c -> HelloWorld)
+  TEST_NAME="$(basename "$(dirname "${INPUT_C}")")"
+else
+  # Default: use HelloWorld test
+  INPUT_C="${ROOT_DIR}/test/EndToEnd/HelloWorld/hello_shmem.c"
+  
+  if [[ ! -f "${INPUT_C}" ]]; then
+    echo "ERROR: Default test file not found: ${INPUT_C}" >&2
+    echo "Create a test or specify one with --test or provide a file path" >&2
+    exit 1
+  fi
+  
+  TEST_NAME="HelloWorld"
+fi
+
 BASENAME="$(basename "${INPUT_C}" .c)"
-OUTPUT_DIR="$(dirname "${INPUT_C}")"
+OUTPUT_DIR="${ROOT_DIR}/tmp/${TEST_NAME}"
+
+# Create output directory
+mkdir -p "${OUTPUT_DIR}"
 
 echo "=== OpenSHMEM MLIR End-to-End Compilation Pipeline ==="
 echo ""
 echo "Input: ${INPUT_C}"
+echo "Test: ${TEST_NAME}"
 echo "Output directory: ${OUTPUT_DIR}"
 echo ""
 
