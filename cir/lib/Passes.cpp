@@ -258,11 +258,11 @@ struct ConvertCIRToOpenSHMEMPass
         return;
 
       Block &bodyBlock = funcOp.getBody().front();
-      
+
       // Find init and finalize ops
       openshmem::InitOp initOp = nullptr;
       openshmem::FinalizeOp finalizeOp = nullptr;
-      
+
       for (auto &op : bodyBlock) {
         if (auto init = dyn_cast<openshmem::InitOp>(&op))
           initOp = init;
@@ -282,7 +282,7 @@ struct ConvertCIRToOpenSHMEMPass
       // Move all operations between init and finalize into the region
       bool insideRegion = false;
       SmallVector<Operation *> opsToMove;
-      
+
       for (auto &op : bodyBlock) {
         if (&op == initOp.getOperation()) {
           insideRegion = true;
@@ -312,17 +312,18 @@ struct ConvertCIRToOpenSHMEMPass
     });
 
     // Clean up unused CIR function declarations for OpenSHMEM API functions
-    // These are no longer needed after conversion and can cause symbol conflicts
+    // These are no longer needed after conversion and can cause symbol
+    // conflicts
     SmallVector<Operation *> toErase;
     module.walk([&](::cir::FuncOp funcOp) {
       auto funcName = funcOp.getSymName();
-      if (isOpenSHMEMAPICall(funcName) && funcOp.isPrivate() && 
+      if (isOpenSHMEMAPICall(funcName) && funcOp.isPrivate() &&
           funcOp.getBody().empty()) {
         // This is an unused OpenSHMEM API declaration, mark for removal
         toErase.push_back(funcOp);
       }
     });
-    
+
     for (Operation *op : toErase) {
       op->erase();
     }

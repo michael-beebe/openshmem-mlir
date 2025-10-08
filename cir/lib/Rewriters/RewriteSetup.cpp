@@ -41,7 +41,7 @@ struct WrapFunctionInRegionPattern : public OpRewritePattern<::cir::FuncOp> {
     // Check if the function contains shmem_init/finalize calls
     bool hasInit = false;
     bool hasFinalize = false;
-    
+
     funcOp.walk([&](::cir::CallOp callOp) {
       auto callee = callOp.getCallee();
       if (callee) {
@@ -58,11 +58,11 @@ struct WrapFunctionInRegionPattern : public OpRewritePattern<::cir::FuncOp> {
 
     // Get the function body
     Block &bodyBlock = funcOp.getBody().front();
-    
+
     // Find init and finalize calls to remove them
     ::cir::CallOp initCall = nullptr;
     ::cir::CallOp finalizeCall = nullptr;
-    
+
     for (auto &op : llvm::make_early_inc_range(bodyBlock)) {
       if (auto callOp = dyn_cast<::cir::CallOp>(&op)) {
         auto callee = callOp.getCallee();
@@ -86,7 +86,7 @@ struct WrapFunctionInRegionPattern : public OpRewritePattern<::cir::FuncOp> {
     // Move all operations between init and finalize into the region
     bool insideRegion = false;
     SmallVector<Operation *> opsToMove;
-    
+
     for (auto &op : bodyBlock) {
       if (&op == initCall.getOperation()) {
         insideRegion = true;
@@ -164,9 +164,10 @@ struct ConvertShmemMyPePattern : public OpRewritePattern<::cir::CallOp> {
 
     // Get the original return type from the CIR call
     Type resultType = callOp.getResultTypes()[0];
-    
+
     // Create openshmem.my_pe operation with the same CIR type
-    auto myPeOp = rewriter.create<openshmem::MyPeOp>(callOp.getLoc(), resultType);
+    auto myPeOp =
+        rewriter.create<openshmem::MyPeOp>(callOp.getLoc(), resultType);
 
     rewriter.replaceOp(callOp, myPeOp.getResult());
     return success();
@@ -185,9 +186,10 @@ struct ConvertShmemNPesPattern : public OpRewritePattern<::cir::CallOp> {
 
     // Get the original return type from the CIR call
     Type resultType = callOp.getResultTypes()[0];
-    
+
     // Create openshmem.n_pes operation with the same CIR type
-    auto nPesOp = rewriter.create<openshmem::NPesOp>(callOp.getLoc(), resultType);
+    auto nPesOp =
+        rewriter.create<openshmem::NPesOp>(callOp.getLoc(), resultType);
 
     rewriter.replaceOp(callOp, nPesOp.getResult());
     return success();
@@ -197,7 +199,7 @@ struct ConvertShmemNPesPattern : public OpRewritePattern<::cir::CallOp> {
 // Pattern registration for setup/query patterns
 void populateCIRToOpenSHMEMSetupPatterns(RewritePatternSet &patterns) {
   // Add the region wrapping pattern first (higher benefit)
-  patterns.add<WrapFunctionInRegionPattern>(patterns.getContext(), 
+  patterns.add<WrapFunctionInRegionPattern>(patterns.getContext(),
                                             /*benefit=*/2);
   // Add fallback patterns for individual init/finalize calls
   patterns.add<ConvertShmemInitPattern, ConvertShmemFinalizePattern,

@@ -34,10 +34,9 @@ int main(int argc, char **argv) {
   mlir::DialectRegistry registry;
 
   // Register core dialects
-  registry.insert<cir::CIRDialect,
-                  mlir::memref::MemRefDialect, mlir::LLVM::LLVMDialect,
-                  mlir::DLTIDialect, mlir::func::FuncDialect,
-                  mlir::arith::ArithDialect>();
+  registry.insert<cir::CIRDialect, mlir::memref::MemRefDialect,
+                  mlir::LLVM::LLVMDialect, mlir::DLTIDialect,
+                  mlir::func::FuncDialect, mlir::arith::ArithDialect>();
 
   // Register OpenSHMEM dialect
   registry.insert<mlir::openshmem::OpenSHMEMDialect>();
@@ -82,6 +81,6 @@ int main(int argc, char **argv) {
   });
 
   return mlir::asMainReturnCode(mlir::MlirOptMain(
-      argc, argv,
-      "OpenSHMEM-enhanced ClangIR analysis and optimization tool\n", registry));
+      argc, argv, "OpenSHMEM-enhanced ClangIR analysis and optimization tool\n",
+      registry));
 }
