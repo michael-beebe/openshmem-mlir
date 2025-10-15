@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-# Build this out-of-tree OpenSHMEM MLIR project against an existing llvm-project build/install.
+# Build this out-of-tree OpenSHMEM MLIR project against an upstream llvm-project build/install.
 # Minimal behavior: detect MLIR/LLVM CMake package dirs under ./llvm-project and configure+build.
 # No environment modifications; no installs.
 
@@ -11,12 +11,24 @@ LLVM_SRC_DIR="${LLVM_SRC_DIR:-${ROOT_DIR}/llvm-project}"
 BUILD_DIR="${BUILD_DIR:-${ROOT_DIR}/build}"
 GENERATOR="${GENERATOR:-Ninja}"
 CMAKE_BUILD_TYPE="${CMAKE_BUILD_TYPE:-Release}"
+TOTAL_CORES="$(nproc)"
+DEFAULT_CORES=$(( TOTAL_CORES / 2 ))
+if (( DEFAULT_CORES < 1 )); then DEFAULT_CORES=1; fi
+CORES="${CORES:-${DEFAULT_CORES}}"
 
 echo "==> Project root : ${ROOT_DIR}"
 echo "==> LLVM src dir : ${LLVM_SRC_DIR}"
 echo "==> Build dir    : ${BUILD_DIR}"
 echo "==> Generator    : ${GENERATOR}"
 echo "==> Build type   : ${CMAKE_BUILD_TYPE}"
+echo "==> Parallel jobs: ${CORES}"
+
+# Ensure upstream tree exists
+if [[ ! -d "${LLVM_SRC_DIR}" ]]; then
+  echo "ERROR: Upstream llvm-project not found at ${LLVM_SRC_DIR}" >&2
+  echo "Run ./scripts/build_llvm_project.sh first or set LLVM_SRC_DIR."
+  exit 1
+fi
 
 # If MLIR_DIR/LLVM_DIR are not provided, try to auto-detect from llvm-project build/install trees.
 detect_pkg_dir() {
@@ -71,6 +83,6 @@ cmake -G "${GENERATOR}" \
   -DLLVM_DIR="${LLVM_DIR}"
 
 echo "==> Building..."
-cmake --build "${BUILD_DIR}" -- -j"$(nproc)"
+cmake --build "${BUILD_DIR}" -- -j"${CORES}"
 
 echo "==> Done. Build tree: ${BUILD_DIR}"

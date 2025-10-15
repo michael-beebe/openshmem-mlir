@@ -14,7 +14,9 @@ set -euo pipefail
 #   SOS_VERSION       - SOS git tag (default: v1.5.2)
 #   RUNTIME_DIR       - where to build/install (default: <repo_root>/openshmem-runtime)
 #   USE_LOCAL_CLANG   - use clang from llvm-project build (default: 1)
-#   CORES             - parallel build jobs (default: nproc)
+#   TOOLCHAIN         - which LLVM toolchain to use when USE_LOCAL_CLANG=1 (clangir|upstream), default: auto-detect
+#   LLVM_BUILD_DIR    - explicit path to LLVM build (with bin/clang); overrides TOOLCHAIN and auto-detect
+#   CORES             - parallel build jobs (default: nproc/2)
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"/.. && pwd -P)"
 
@@ -22,7 +24,15 @@ LIBFABRIC_VERSION="${LIBFABRIC_VERSION:-1.15.1}"
 SOS_VERSION="${SOS_VERSION:-v1.5.2}"
 RUNTIME_DIR="${RUNTIME_DIR:-${ROOT_DIR}/openshmem-runtime}"
 USE_LOCAL_CLANG="${USE_LOCAL_CLANG:-1}"
-CORES="${CORES:-$(nproc)}"
+TOOLCHAIN="${TOOLCHAIN:-}"
+TOTAL_CORES="$(nproc)"
+DEFAULT_CORES=$(( TOTAL_CORES / 2 ))
+if (( DEFAULT_CORES < 1 )); then DEFAULT_CORES=1; fi
+CORES="${CORES:-${DEFAULT_CORES}}"
+# Sanity bounds for CORES
+if ! [[ "${CORES}" =~ ^[0-9]+$ ]]; then CORES=${DEFAULT_CORES}; fi
+if (( CORES < 1 )); then CORES=1; fi
+if (( CORES > TOTAL_CORES )); then CORES=${TOTAL_CORES}; fi
 
 # Paths for libfabric and SOS
 LIBFABRIC_DIR="${RUNTIME_DIR}/libfabric-${LIBFABRIC_VERSION}"
@@ -37,23 +47,67 @@ echo "==> Parallel jobs: ${CORES}"
 
 # Determine which compiler to use
 if [[ "${USE_LOCAL_CLANG}" == "1" ]]; then
-  # Find the LLVM build directory
-  LLVM_BUILD_DIR="${ROOT_DIR}/llvm-project/build-release-21.x"
-  if [[ ! -d "${LLVM_BUILD_DIR}" ]]; then
-    echo "ERROR: LLVM build directory not found: ${LLVM_BUILD_DIR}" >&2
-    echo "Run ./scripts/build_llvm_project.sh first, or set USE_LOCAL_CLANG=0" >&2
+  # Select LLVM toolchain: explicit path > TOOLCHAIN choice > auto-detect
+  LLVM_BUILD_DIR="${LLVM_BUILD_DIR:-}"
+
+  if [[ -z "${LLVM_BUILD_DIR}" ]]; then
+    case "${TOOLCHAIN}" in
+      clangir)
+        LLVM_BUILD_DIR="${ROOT_DIR}/clangir/build-main"
+        ;;
+      upstream)
+        LLVM_BUILD_DIR="${ROOT_DIR}/llvm-project/build-release-21.x"
+        ;;
+      ""|*)
+        # Auto-detect: prefer incubator (clangir) first, then legacy/incubator, then upstream
+        CANDIDATES=(
+          "${ROOT_DIR}/clangir/build-main"
+          "${ROOT_DIR}/llvm-project-incubator/build-main"
+          "${ROOT_DIR}/llvm-project/build-release-21.x"
+        )
+        for d in "${CANDIDATES[@]}"; do
+          if [[ -x "${d}/bin/clang" ]]; then
+            LLVM_BUILD_DIR="${d}"
+            break
+          fi
+        done
+        ;;
+    esac
+  fi
+
+  if [[ -z "${LLVM_BUILD_DIR}" ]]; then
+    echo "ERROR: Could not locate a local LLVM build with clang." >&2
+    echo "Searched candidates (in order):" >&2
+    echo "  - ${ROOT_DIR}/clangir/build-main" >&2
+    echo "  - ${ROOT_DIR}/llvm-project-incubator/build-main" >&2
+    echo "  - ${ROOT_DIR}/llvm-project/build-release-21.x" >&2
+    echo "Options:" >&2
+    echo "  - Set TOOLCHAIN=clangir or TOOLCHAIN=upstream" >&2
+    echo "  - Or set LLVM_BUILD_DIR to your build (with bin/clang)" >&2
+    echo "  - Or set USE_LOCAL_CLANG=0 to use system compilers" >&2
     exit 1
   fi
-  
+
   CLANG="${LLVM_BUILD_DIR}/bin/clang"
   CLANGXX="${LLVM_BUILD_DIR}/bin/clang++"
-  
+
   if [[ ! -x "${CLANG}" ]]; then
     echo "ERROR: clang not found at ${CLANG}" >&2
     exit 1
   fi
-  
-  echo "==> Using local clang: ${CLANG}"
+
+  # Best-effort toolchain label for logs
+  if [[ "${LLVM_BUILD_DIR}" == *"/clangir/"* || "${LLVM_BUILD_DIR}" == *"/clangir/build-main" ]]; then
+    SELECTED_TOOLCHAIN="clangir"
+  elif [[ "${LLVM_BUILD_DIR}" == *"/llvm-project/"* ]]; then
+    SELECTED_TOOLCHAIN="upstream"
+  else
+    SELECTED_TOOLCHAIN="custom"
+  fi
+
+  echo "==> Using local clang from: ${LLVM_BUILD_DIR} (toolchain: ${SELECTED_TOOLCHAIN})"
+  echo "    - CC:  ${CLANG}"
+  echo "    - CXX: ${CLANGXX}"
   export CC="${CLANG}"
   export CXX="${CLANGXX}"
 else
@@ -164,7 +218,7 @@ make -j"${CORES}" install
 
 # Run tests (optional, can fail in some environments)
 echo "==> Running SOS tests (non-fatal)..."
-make -j check || echo "Some tests failed (this is often expected in non-MPI environments)"
+make -j"${CORES}" check || echo "Some tests failed (this is often expected in non-MPI environments)"
 
 echo "SOS installed successfully"
 

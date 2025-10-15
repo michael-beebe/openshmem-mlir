@@ -85,6 +85,14 @@ LLVM_BUILD="${ROOT_DIR}/llvm-project/build-release-21.x"
 SHMEM_CIR_OPT="${ROOT_DIR}/build/tools/shmem-cir-opt/shmem-cir-opt"
 SOS_DIR="${ROOT_DIR}/openshmem-runtime/SOS-v1.5.2"
 
+# Step 3 tool/flags (overridable to use ClangIR incubator plugins or tools)
+# Defaults:
+#   - Use our shmem-cir-opt tool and run the built-in --cir-to-llvm pass
+#   - Allow callers to append flags (e.g., --load-dialect-plugin/--load-pass-plugin) via EXTRA_STEP3_FLAGS
+CIR_TO_LLVM_TOOL="${CIR_TO_LLVM_TOOL:-${SHMEM_CIR_OPT}}"
+CIR_TO_LLVM_PASSES="${CIR_TO_LLVM_PASSES:---cir-to-llvm}"
+EXTRA_STEP3_FLAGS="${EXTRA_STEP3_FLAGS:-}"
+
 # Check prerequisites
 if [[ ! -x "${LLVM_BUILD}/bin/clang" ]]; then
   echo "ERROR: clang not found. Run ./scripts/build_llvm_project.sh first" >&2
@@ -191,7 +199,12 @@ echo ""
 
 # Step 2: CIR → OpenSHMEM MLIR
 echo "Step 2: ClangIR → OpenSHMEM MLIR..."
+EXTRA_STEP2_FLAGS="${EXTRA_STEP2_FLAGS:-}"
+if [[ -n "${EXTRA_STEP2_FLAGS}" ]]; then
+  echo "  Extra: ${EXTRA_STEP2_FLAGS}"
+fi
 "${SHMEM_CIR_OPT}" \
+  ${EXTRA_STEP2_FLAGS} \
   "${OUTPUT_DIR}/1.${BASENAME}.mlir" \
   --convert-cir-to-openshmem \
   -o "${OUTPUT_DIR}/2.${BASENAME}.openshmem.mlir"
@@ -200,9 +213,14 @@ echo ""
 
 # Step 3: Convert CIR to LLVM MLIR (leaving OpenSHMEM ops)
 echo "Step 3: Converting CIR to LLVM MLIR..."
-"${SHMEM_CIR_OPT}" \
+echo "  Tool : ${CIR_TO_LLVM_TOOL}"
+if [[ -n "${EXTRA_STEP3_FLAGS}" ]]; then
+  echo "  Extra: ${EXTRA_STEP3_FLAGS}"
+fi
+"${CIR_TO_LLVM_TOOL}" \
+  ${EXTRA_STEP3_FLAGS} \
   "${OUTPUT_DIR}/2.${BASENAME}.openshmem.mlir" \
-  --cir-to-llvm \
+  ${CIR_TO_LLVM_PASSES} \
   -o "${OUTPUT_DIR}/3.${BASENAME}.partial-llvm.mlir"
 echo "  Generated: ${OUTPUT_DIR}/3.${BASENAME}.partial-llvm.mlir"
 echo ""

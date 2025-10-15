@@ -19,8 +19,13 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"/.. && pwd -P)"
 
-LLVM_REPO="${LLVM_REPO:-https://github.com/llvm/llvm-project.git}"
-LLVM_BRANCH="${LLVM_BRANCH:-release/21.x}"
+# Use upstream llvm-project repo
+  # LLVM_REPO="${LLVM_REPO:-https://github.com/llvm/llvm-project.git}"
+  # LLVM_BRANCH="${LLVM_BRANCH:-release/21.x}"
+
+# Use clangIR incubator repo
+LLVM_REPO="${LLVM_REPO:-https://github.com/llvm/clangir.git}"
+LLVM_BRANCH="${LLVM_BRANCH:-main}"
 
 # Sanitize branch for directory names
 BRANCH_SLUG="${LLVM_BRANCH//\//-}"
@@ -33,6 +38,11 @@ INSTALL_DIR="${LLVM_SRC_DIR}/install-${BRANCH_SLUG}"
 GENERATOR="${GENERATOR:-Ninja}"
 CMAKE_BUILD_TYPE="${CMAKE_BUILD_TYPE:-Release}"
 LLVM_TARGETS_TO_BUILD="${LLVM_TARGETS_TO_BUILD:-host}"
+# Parallelism (default to half the cores to avoid OOM)
+TOTAL_CORES="$(nproc)"
+DEFAULT_CORES=$(( TOTAL_CORES / 2 ))
+if (( DEFAULT_CORES < 1 )); then DEFAULT_CORES=1; fi
+CORES="${CORES:-${DEFAULT_CORES}}"
 
 echo "==> Repository root: ${ROOT_DIR}"
 echo "==> LLVM source dir: ${LLVM_SRC_DIR}"
@@ -41,6 +51,7 @@ echo "==> Build directory: ${BUILD_DIR}"
 echo "==> Install prefix : ${INSTALL_DIR}"
 echo "==> Generator      : ${GENERATOR}"
 echo "==> Build type     : ${CMAKE_BUILD_TYPE}"
+echo "==> Parallel jobs  : ${CORES}"
 
 # Build only upstream llvm-project (no external projects). If a previous cache
 # had external settings, clear them using -U during configure.
@@ -96,9 +107,9 @@ cmake -G "${GENERATOR}" \
 
 echo "==> Building..."
 if [[ -n "${BUILD_TARGETS:-}" ]]; then
-  cmake --build "${BUILD_DIR}" --target ${BUILD_TARGETS} -- -j"$(nproc)"
+  cmake --build "${BUILD_DIR}" --target ${BUILD_TARGETS} -- -j"${CORES}"
 else
-  cmake --build "${BUILD_DIR}" -- -j"$(nproc)"
+  cmake --build "${BUILD_DIR}" -- -j"${CORES}"
 fi
 
 cat <<EOF
@@ -106,8 +117,8 @@ cat <<EOF
 Build tree: ${BUILD_DIR}
 Install prefix (not installed yet): ${INSTALL_DIR}
 
-To install:
-  cmake --build "${BUILD_DIR}" --target install -- -j"$(nproc)"
+To install (optional):
+  cmake --build "${BUILD_DIR}" --target install -- -j"${CORES}"
 
 After installing, prepend to your PATH for tools like mlir-opt and cir-opt:
   export PATH="${INSTALL_DIR}/bin:\$PATH"
