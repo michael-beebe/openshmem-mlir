@@ -21,7 +21,12 @@ fi
 
 # Get the project root directory
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BUILD_DIR="${PROJECT_ROOT}/build-upstream"
+source "${PROJECT_ROOT}/scripts/lib/toolchain.sh"
+
+TOOLCHAIN="${TOOLCHAIN:-upstream}"
+toolchain_resolve "${TOOLCHAIN}"
+
+BUILD_DIR="${BUILD_DIR:-${TC_PROJECT_BUILD_DIR_DEFAULT}}"
 TEST_DIR="${PROJECT_ROOT}/test"
 SHMEM_MLIR_OPT="${BUILD_DIR}/tools/shmem-mlir-opt/shmem-mlir-opt"
 

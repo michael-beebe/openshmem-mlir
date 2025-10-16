@@ -6,8 +6,8 @@ set -euo pipefail
 #
 # This script demonstrates the full compilation flow:
 #   1. C code → ClangIR (using clang -fclangir)
-#   2. CIR → OpenSHMEM MLIR (using shmem-cir-opt)
-#   3. OpenSHMEM MLIR → LLVM MLIR (using shmem-cir-opt)
+#   2. CIR → OpenSHMEM MLIR (using shmem-mlir-opt)
+#   3. OpenSHMEM MLIR → LLVM MLIR (using cir-opt and shmem-mlir-opt)
 #   4. LLVM MLIR → LLVM IR (using mlir-translate)
 #   5. LLVM IR → Binary (using clang with OpenSHMEM runtime)
 #
@@ -25,17 +25,27 @@ set -euo pipefail
 #   ./test_end_to_end.sh test/EndToEnd/Atomics/test.c       # Run specific file
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"/.. && pwd -P)"
+source "${ROOT_DIR}/scripts/lib/toolchain.sh"
 
 # Parse command-line arguments
 DO_CLEAN=0
 TEST_NAME_ARG=""
 INPUT_FILE_ARG=""
+TOOLCHAIN="${TOOLCHAIN:-upstream}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --clean)
       DO_CLEAN=1
       shift
+      ;;
+    --toolchain)
+      if [[ -z "${2:-}" ]]; then
+        echo "ERROR: --toolchain requires an argument" >&2
+        exit 1
+      fi
+      TOOLCHAIN="$2"
+      shift 2
       ;;
     --test)
       if [[ -z "${2:-}" ]]; then
@@ -51,6 +61,7 @@ while [[ $# -gt 0 ]]; do
       echo "Options:"
       echo "  --test <TestName>    Run a specific test by name (e.g., --test HelloWorld)"
       echo "  --clean              Remove tmp/ directory before running"
+  echo "  --toolchain <id>     Select LLVM toolchain (upstream or incubator)"
       echo "  --help, -h           Show this help message"
       echo ""
       echo "Examples:"
@@ -72,6 +83,47 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+# Resolve toolchain selection and derive paths
+if [[ "${TOOLCHAIN}" == "auto" ]]; then
+  DETECTED_TOOLCHAIN=""
+  for candidate in incubator upstream; do
+    toolchain_resolve "${candidate}"
+    if [[ -x "${TC_CLANG}" ]]; then
+      TOOLCHAIN="${candidate}"
+      DETECTED_TOOLCHAIN="${candidate}"
+      break
+    fi
+  done
+  if [[ -z "${DETECTED_TOOLCHAIN}" ]]; then
+    echo "ERROR: --toolchain auto could not find a usable clang toolchain." >&2
+    echo "Run ./scripts/build_toolchain.sh --toolchain <id> first." >&2
+    exit 1
+  fi
+else
+  toolchain_require "${TOOLCHAIN}"
+  toolchain_resolve "${TOOLCHAIN}"
+fi
+
+# Ensure globals reflect the final toolchain choice
+toolchain_resolve "${TOOLCHAIN}"
+
+DEFAULT_PROJECT_BUILD_DIR="${TC_PROJECT_BUILD_DIR_DEFAULT}"
+ENV_PROJECT_BUILD_DIR="${PROJECT_BUILD_DIR:-}"
+PROJECT_BUILD_DIR="${ENV_PROJECT_BUILD_DIR:-${DEFAULT_PROJECT_BUILD_DIR}}"
+SHMEM_MLIR_OPT="${PROJECT_BUILD_DIR}/tools/shmem-mlir-opt/shmem-mlir-opt"
+
+ENV_LLVM_BUILD="${LLVM_BUILD:-}"
+LLVM_BUILD="${ENV_LLVM_BUILD:-${TC_BIN_DIR%/bin}}"
+LLVM_BIN_DIR="${LLVM_BUILD}/bin"
+CLANG_BIN="${LLVM_BIN_DIR}/clang"
+MLIR_OPT_BIN="${LLVM_BIN_DIR}/mlir-opt"
+MLIR_TRANSLATE_BIN="${LLVM_BIN_DIR}/mlir-translate"
+LLC_BIN="${LLVM_BIN_DIR}/llc"
+
+CIR_TO_LLVM_TOOL="${CIR_TO_LLVM_TOOL:-${TC_CIR_OPT}}"
+CIR_TO_LLVM_PASSES="${CIR_TO_LLVM_PASSES:---cir-to-llvm}"
+EXTRA_STEP3_FLAGS="${EXTRA_STEP3_FLAGS:-}"
+
 # Clean tmp/ directory if requested
 if [[ ${DO_CLEAN} -eq 1 ]]; then
   echo "Cleaning tmp/ directory..."
@@ -81,22 +133,13 @@ if [[ ${DO_CLEAN} -eq 1 ]]; then
 fi
 
 # Paths
-LLVM_BUILD="${ROOT_DIR}/llvm-project/build-release-21.x"
-SHMEM_MLIR_OPT="${ROOT_DIR}/build/tools/shmem-mlir-opt/shmem-mlir-opt"
-SOS_DIR="${ROOT_DIR}/openshmem-runtime/SOS-v1.5.2"
-
-# Step 3 tool/flags (overridable to use ClangIR incubator plugins or tools)
-# Defaults:
-#   - Use our shmem-mlir-opt tool for OpenSHMEM passes
-#   - Use clang's cir-opt for CIR→LLVM passes by default
-#   - Allow callers to append flags (e.g., --load-dialect-plugin/--load-pass-plugin) via EXTRA_STEP3_FLAGS
-CIR_TO_LLVM_TOOL="${CIR_TO_LLVM_TOOL:-${LLVM_BUILD}/bin/cir-opt}"
-CIR_TO_LLVM_PASSES="${CIR_TO_LLVM_PASSES:---cir-to-llvm}"
-EXTRA_STEP3_FLAGS="${EXTRA_STEP3_FLAGS:-}"
+SOS_VERSION="${SOS_VERSION:-v1.5.2}"
+SOS_DIR="${ROOT_DIR}/openshmem-runtime/SOS-${SOS_VERSION}"
 
 # Check prerequisites
-if [[ ! -x "${LLVM_BUILD}/bin/clang" ]]; then
-  echo "ERROR: clang not found. Run ./scripts/build_llvm_project.sh first" >&2
+if [[ ! -x "${CLANG_BIN}" ]]; then
+  echo "ERROR: clang not found at ${CLANG_BIN}." >&2
+  echo "Run ./scripts/build_toolchain.sh --toolchain ${TOOLCHAIN} first." >&2
   exit 1
 fi
 
@@ -110,6 +153,17 @@ if [[ ! -x "${CIR_TO_LLVM_TOOL}" ]]; then
   echo "Set CIR_TO_LLVM_TOOL to your preferred binary (e.g., <clangir-build>/bin/cir-opt)" >&2
   exit 1
 fi
+
+for tool in "${MLIR_OPT_BIN}" "${MLIR_TRANSLATE_BIN}" "${LLC_BIN}"; do
+  if [[ ! -x "${tool}" ]]; then
+    echo "ERROR: Required LLVM tool not found at ${tool}." >&2
+    echo "Ensure your ${TOOLCHAIN} toolchain build is complete." >&2
+    exit 1
+  fi
+done
+
+echo "Using LLVM toolchain (${TOOLCHAIN}): ${LLVM_BUILD}"
+echo "Using project build       : ${PROJECT_BUILD_DIR}"
 
 if [[ ! -d "${SOS_DIR}" ]]; then
   echo "WARNING: SOS not found at ${SOS_DIR}"
@@ -197,7 +251,7 @@ if [[ ${HAS_RUNTIME} -eq 1 ]]; then
     -o "${OUTPUT_DIR}/1.${BASENAME}.mlir"
 else
   # Fallback to direct clang (may not find shmem.h)
-  "${LLVM_BUILD}/bin/clang" -fclangir -emit-cir \
+  "${CLANG_BIN}" -fclangir -emit-cir \
     "${INPUT_C}" \
     -o "${OUTPUT_DIR}/1.${BASENAME}.mlir"
 fi
@@ -243,7 +297,7 @@ echo ""
 
 # Step 5: Reconcile unrealized casts
 echo "Step 5: Reconciling unrealized casts..."
-"${LLVM_BUILD}/bin/mlir-opt" \
+"${MLIR_OPT_BIN}" \
   --allow-unregistered-dialect \
   "${OUTPUT_DIR}/4.${BASENAME}.llvm-with-casts.mlir" \
   --reconcile-unrealized-casts \
@@ -253,7 +307,7 @@ echo ""
 
 # Step 6: LLVM MLIR → LLVM IR
 echo "Step 6: LLVM MLIR → LLVM IR..."
-"${LLVM_BUILD}/bin/mlir-translate" \
+"${MLIR_TRANSLATE_BIN}" \
   --mlir-to-llvmir \
   "${OUTPUT_DIR}/5.${BASENAME}.llvm.mlir" \
   -o "${OUTPUT_DIR}/6.${BASENAME}.ll"
@@ -265,7 +319,7 @@ if [[ ${HAS_RUNTIME} -eq 1 ]]; then
   echo "Step 7: LLVM IR → Assembly..."
   
   # Compile LLVM IR to assembly
-  "${LLVM_BUILD}/bin/llc" \
+  "${LLC_BIN}" \
     "${OUTPUT_DIR}/6.${BASENAME}.ll" \
     -o "${OUTPUT_DIR}/7.${BASENAME}.s"
   echo "  Generated: ${OUTPUT_DIR}/7.${BASENAME}.s"
@@ -273,7 +327,7 @@ if [[ ${HAS_RUNTIME} -eq 1 ]]; then
   
   # Step 8: Assembly → Object file
   echo "Step 8: Assembly → Object file..."
-  "${LLVM_BUILD}/bin/llc" \
+  "${LLC_BIN}" \
     -filetype=obj \
     "${OUTPUT_DIR}/6.${BASENAME}.ll" \
     -o "${OUTPUT_DIR}/8.${BASENAME}.o"

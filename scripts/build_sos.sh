@@ -2,6 +2,28 @@
 
 set -euo pipefail
 
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"/.. && pwd -P)"
+source "${ROOT_DIR}/scripts/lib/toolchain.sh"
+
+print_usage() {
+  cat <<EOF
+Usage: $0 [options]
+
+Build libfabric and Sandia OpenSHMEM (SOS). By default the script uses a local
+LLVM/Clang toolchain built via build_toolchain.sh.
+
+Options:
+  --toolchain <id>   Choose toolchain (upstream|incubator|auto). Default: auto
+  --use-local        Force use of local clang toolchain (same as USE_LOCAL_CLANG=1)
+  --use-system       Build with system compilers (same as USE_LOCAL_CLANG=0)
+  --help             Show this message
+
+Environment overrides:
+  LIBFABRIC_VERSION, SOS_VERSION, RUNTIME_DIR, TOOLCHAIN, USE_LOCAL_CLANG,
+  LLVM_BUILD_DIR, CORES, plus the settings documented in build_toolchain.sh.
+EOF
+}
+
 # Build libfabric and Sandia OpenSHMEM (SOS) using local LLVM clang.
 # This provides oshcc wrapper and libshmem for testing OpenSHMEM programs.
 #
@@ -18,23 +40,52 @@ set -euo pipefail
 #   LLVM_BUILD_DIR    - explicit path to LLVM build (with bin/clang); overrides TOOLCHAIN and auto-detect
 #   CORES             - parallel build jobs (default: nproc/2)
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"/.. && pwd -P)"
-
 LIBFABRIC_VERSION="${LIBFABRIC_VERSION:-1.15.1}"
 SOS_VERSION="${SOS_VERSION:-v1.5.2}"
 RUNTIME_DIR="${RUNTIME_DIR:-${ROOT_DIR}/openshmem-runtime}"
 USE_LOCAL_CLANG="${USE_LOCAL_CLANG:-1}"
 TOOLCHAIN="${TOOLCHAIN:-}"
-TOTAL_CORES="$(nproc)"
-DEFAULT_CORES=$(( TOTAL_CORES / 2 ))
-if (( DEFAULT_CORES < 1 )); then DEFAULT_CORES=1; fi
-unset CORES
-CORES="${CORES:-${DEFAULT_CORES}}"
-# Sanity bounds for CORES
-if ! [[ "${CORES}" =~ ^[0-9]+$ ]]; then CORES=${DEFAULT_CORES}; fi
-if (( CORES < 1 )); then CORES=1; fi
-if (( CORES > TOTAL_CORES )); then CORES=${TOTAL_CORES}; fi
 
+SCRIPT_TOOLCHAIN=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --toolchain)
+      if [[ -z "${2:-}" ]]; then
+        echo "ERROR: --toolchain requires an argument" >&2
+        exit 1
+      fi
+      SCRIPT_TOOLCHAIN="$2"
+      shift 2
+      ;;
+    --use-local)
+      USE_LOCAL_CLANG=1
+      shift
+      ;;
+    --use-system)
+      USE_LOCAL_CLANG=0
+      shift
+      ;;
+    --help|-h)
+      print_usage
+      exit 0
+      ;;
+    *)
+      echo "ERROR: Unknown option '$1'" >&2
+      echo "Run with --help for usage." >&2
+      exit 1
+      ;;
+  esac
+
+
+if [[ -n "${SCRIPT_TOOLCHAIN}" ]]; then
+  TOOLCHAIN="${SCRIPT_TOOLCHAIN}"
+fi
+
+TOOLCHAIN="${TOOLCHAIN:-auto}"
+
+DEFAULT_CORES="$(toolchain_default_jobs)"
+ENV_CORES="${CORES:-${DEFAULT_CORES}}"
+CORES="$(toolchain_resolve_jobs "${ENV_CORES}")"
 # Paths for libfabric and SOS
 LIBFABRIC_DIR="${RUNTIME_DIR}/libfabric-${LIBFABRIC_VERSION}"
 SOS_DIR="${RUNTIME_DIR}/SOS-${SOS_VERSION}"
@@ -48,44 +99,39 @@ echo "==> Parallel jobs: ${CORES}"
 
 # Determine which compiler to use
 if [[ "${USE_LOCAL_CLANG}" == "1" ]]; then
-  # Select LLVM toolchain: explicit path > TOOLCHAIN choice > auto-detect
   LLVM_BUILD_DIR="${LLVM_BUILD_DIR:-}"
+  SELECTED_TOOLCHAIN=""
 
-  if [[ -z "${LLVM_BUILD_DIR}" ]]; then
-    case "${TOOLCHAIN}" in
-      clangir)
-        LLVM_BUILD_DIR="${ROOT_DIR}/clangir/build-main"
-        ;;
-      upstream)
-        LLVM_BUILD_DIR="${ROOT_DIR}/llvm-project/build-release-21.x"
-        ;;
-      ""|*)
-        # Auto-detect: prefer incubator (clangir) first, then legacy/incubator, then upstream
-        CANDIDATES=(
-          "${ROOT_DIR}/clangir/build-main"
-          "${ROOT_DIR}/llvm-project-incubator/build-main"
-          "${ROOT_DIR}/llvm-project/build-release-21.x"
-        )
-        for d in "${CANDIDATES[@]}"; do
-          if [[ -x "${d}/bin/clang" ]]; then
-            LLVM_BUILD_DIR="${d}"
-            break
-          fi
-        done
-        ;;
-    esac
+  if [[ -n "${LLVM_BUILD_DIR}" ]]; then
+    SELECTED_TOOLCHAIN="custom"
+  else
+    if [[ "${TOOLCHAIN}" == "auto" ]]; then
+      for candidate in incubator upstream; do
+        toolchain_resolve "${candidate}"
+        candidate_root="${TC_BIN_DIR%/bin}"
+        if [[ -x "${TC_CLANG}" ]]; then
+          LLVM_BUILD_DIR="${candidate_root}"
+          SELECTED_TOOLCHAIN="${candidate}"
+          break
+        fi
+      done
+    else
+      toolchain_require "${TOOLCHAIN}"
+      toolchain_resolve "${TOOLCHAIN}"
+      LLVM_BUILD_DIR="${TC_BIN_DIR%/bin}"
+      SELECTED_TOOLCHAIN="${TC_ID}"
+    fi
   fi
 
   if [[ -z "${LLVM_BUILD_DIR}" ]]; then
     echo "ERROR: Could not locate a local LLVM build with clang." >&2
-    echo "Searched candidates (in order):" >&2
-    echo "  - ${ROOT_DIR}/clangir/build-main" >&2
-    echo "  - ${ROOT_DIR}/llvm-project-incubator/build-main" >&2
-    echo "  - ${ROOT_DIR}/llvm-project/build-release-21.x" >&2
-    echo "Options:" >&2
-    echo "  - Set TOOLCHAIN=clangir or TOOLCHAIN=upstream" >&2
-    echo "  - Or set LLVM_BUILD_DIR to your build (with bin/clang)" >&2
-    echo "  - Or set USE_LOCAL_CLANG=0 to use system compilers" >&2
+    if [[ "${TOOLCHAIN}" == "auto" ]]; then
+      echo "Tried toolchains: $(toolchain_available)" >&2
+      echo "Run ./scripts/build_toolchain.sh --toolchain <id> to build one." >&2
+    else
+      echo "Selected toolchain '${TOOLCHAIN}' is not available. Run ./scripts/build_toolchain.sh --toolchain ${TOOLCHAIN}." >&2
+    fi
+    echo "Alternatively, set LLVM_BUILD_DIR or USE_LOCAL_CLANG=0." >&2
     exit 1
   fi
 
@@ -97,13 +143,14 @@ if [[ "${USE_LOCAL_CLANG}" == "1" ]]; then
     exit 1
   fi
 
-  # Best-effort toolchain label for logs
-  if [[ "${LLVM_BUILD_DIR}" == *"/clangir/"* || "${LLVM_BUILD_DIR}" == *"/clangir/build-main" ]]; then
-    SELECTED_TOOLCHAIN="clangir"
-  elif [[ "${LLVM_BUILD_DIR}" == *"/llvm-project/"* ]]; then
-    SELECTED_TOOLCHAIN="upstream"
-  else
-    SELECTED_TOOLCHAIN="custom"
+  if [[ -z "${SELECTED_TOOLCHAIN}" ]]; then
+    if [[ "${LLVM_BUILD_DIR}" == *"/clangir/"* ]]; then
+      SELECTED_TOOLCHAIN="incubator"
+    elif [[ "${LLVM_BUILD_DIR}" == *"/llvm-project/"* ]]; then
+      SELECTED_TOOLCHAIN="upstream"
+    else
+      SELECTED_TOOLCHAIN="custom"
+    fi
   fi
 
   echo "==> Using local clang from: ${LLVM_BUILD_DIR} (toolchain: ${SELECTED_TOOLCHAIN})"
