@@ -5,12 +5,13 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"/.. && pwd -P)"
 CLANGIR_SRC_DIR="${CLANGIR_SRC_DIR:-${ROOT_DIR}/clangir}"
 CLANGIR_BUILD_DIR="${CLANGIR_BUILD_DIR:-${CLANGIR_SRC_DIR}/build-main}"
-BUILD_DIR="${BUILD_DIR:-${ROOT_DIR}/build-clangir}" # separate build tree
+BUILD_DIR="${BUILD_DIR:-${ROOT_DIR}/build-incubator}" # separate build tree
 GENERATOR="${GENERATOR:-Ninja}"
 CMAKE_BUILD_TYPE="${CMAKE_BUILD_TYPE:-Release}"
 TOTAL_CORES="$(nproc)"
 DEFAULT_CORES=$(( TOTAL_CORES / 2 ))
 if (( DEFAULT_CORES < 1 )); then DEFAULT_CORES=1; fi
+unset CORES
 CORES="${CORES:-${DEFAULT_CORES}}"
 # Sanity bounds
 if ! [[ "${CORES}" =~ ^[0-9]+$ ]]; then CORES=${DEFAULT_CORES}; fi

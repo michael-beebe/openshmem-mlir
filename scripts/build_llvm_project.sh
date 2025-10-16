@@ -20,28 +20,25 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"/.. && pwd -P)"
 
 # Use upstream llvm-project repo
-  # LLVM_REPO="${LLVM_REPO:-https://github.com/llvm/llvm-project.git}"
-  # LLVM_BRANCH="${LLVM_BRANCH:-release/21.x}"
-
-# Use clangIR incubator repo
-LLVM_REPO="${LLVM_REPO:-https://github.com/llvm/clangir.git}"
-LLVM_BRANCH="${LLVM_BRANCH:-main}"
+LLVM_REPO="${LLVM_REPO:-https://github.com/llvm/llvm-project.git}"
+LLVM_BRANCH="${LLVM_BRANCH:-release/21.x}"
 
 # Sanitize branch for directory names
 BRANCH_SLUG="${LLVM_BRANCH//\//-}"
 
 LLVM_SRC_DIR="${LLVM_SRC_DIR:-${ROOT_DIR}/llvm-project}"
-# Always place build/install under the llvm-project clone to avoid cluttering the repo root
 BUILD_DIR="${LLVM_SRC_DIR}/build-${BRANCH_SLUG}"
 INSTALL_DIR="${LLVM_SRC_DIR}/install-${BRANCH_SLUG}"
 
 GENERATOR="${GENERATOR:-Ninja}"
 CMAKE_BUILD_TYPE="${CMAKE_BUILD_TYPE:-Release}"
 LLVM_TARGETS_TO_BUILD="${LLVM_TARGETS_TO_BUILD:-host}"
+
 # Parallelism (default to half the cores to avoid OOM)
 TOTAL_CORES="$(nproc)"
 DEFAULT_CORES=$(( TOTAL_CORES / 2 ))
 if (( DEFAULT_CORES < 1 )); then DEFAULT_CORES=1; fi
+unset CORES
 CORES="${CORES:-${DEFAULT_CORES}}"
 
 echo "==> Repository root: ${ROOT_DIR}"

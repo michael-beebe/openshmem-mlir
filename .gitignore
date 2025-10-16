@@ -7,6 +7,8 @@ llvm-project
 openshmem-runtime
 clangir-incubator
 clangir
+build-upstream
+build-incubator
 
 CMakeLists.txt.user
 CMakeCache.txt

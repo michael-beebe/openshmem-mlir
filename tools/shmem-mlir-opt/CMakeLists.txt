@@ -2,6 +2,14 @@ add_executable(shmem-mlir-opt
   shmem-mlir-opt.cpp
 )
 
+# If ClangIR is available, define the flag and add CIR support
+if (HAVE_CLANGIR)
+  target_compile_definitions(shmem-mlir-opt PRIVATE ENABLE_CLANGIR)
+  message(STATUS "shmem-mlir-opt: Building with ClangIR support")
+else()
+  message(STATUS "shmem-mlir-opt: Building without ClangIR support")
+endif()
+
 # Link against MLIR driver components and the built OpenSHMEM libraries so
 # the dialect and passes are available inside the tool.
 mlir_check_all_link_libraries(shmem-mlir-opt)
@@ -37,18 +45,31 @@ target_link_libraries(shmem-mlir-opt
   PRIVATE
     MLIROpenSHMEMToLLVM
     MLIROpenSHMEMDialect
-    MLIROpenSHMEMCIRPasses
-    MLIROpenSHMEMCIRRewriters
-    MLIRCIR
 )
+
+# Only link CIR libraries when ClangIR is available
+if (HAVE_CLANGIR)
+  target_link_libraries(shmem-mlir-opt
+    PRIVATE
+      MLIROpenSHMEMCIRPasses
+      MLIROpenSHMEMCIRRewriters
+      MLIRCIR
+  )
+endif()
 
 # Make sure the include path contains generated headers
 target_include_directories(shmem-mlir-opt PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/../../include
-  ${CMAKE_CURRENT_SOURCE_DIR}/../../cir/include
   ${CMAKE_CURRENT_BINARY_DIR}/../../include
-  ${CMAKE_CURRENT_BINARY_DIR}/../../cir/include
 )
+
+# Only add CIR includes when ClangIR is available
+if (HAVE_CLANGIR)
+  target_include_directories(shmem-mlir-opt PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../cir/include
+    ${CMAKE_CURRENT_BINARY_DIR}/../../cir/include
+  )
+endif()
 
 # Export symbols for plugin capability if needed
 if(MLIR_EXPORT_SYMBOLS_FOR_PLUGINS)

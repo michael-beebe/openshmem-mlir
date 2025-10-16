@@ -1,4 +1,3 @@
-#include "OpenSHMEMCIR/Passes.h"
 #include "mlir/Conversion/OpenSHMEMToLLVM/OpenSHMEMToLLVM.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/OpenSHMEM/IR/OpenSHMEM.h"
@@ -7,7 +6,11 @@
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Pass/PassRegistry.h"
 #include "mlir/Tools/mlir-opt/MlirOptMain.h"
+
+#ifdef ENABLE_CLANGIR
+#include "OpenSHMEMCIR/Passes.h"
 #include "clang/CIR/Dialect/IR/CIRDialect.h"
+#endif
 
 int main(int argc, char **argv) {
   mlir::DialectRegistry registry;
@@ -18,8 +21,10 @@ int main(int argc, char **argv) {
   // Register our OpenSHMEM dialect
   registry.insert<mlir::openshmem::OpenSHMEMDialect>();
 
-  // Register ClangIR dialect
+#ifdef ENABLE_CLANGIR
+  // Register ClangIR dialect (only when building with ClangIR incubator)
   registry.insert<cir::CIRDialect>();
+#endif
 
   // Explicitly register arith dialect to ensure it's available
   registry.insert<mlir::arith::ArithDialect>();
@@ -27,8 +32,10 @@ int main(int argc, char **argv) {
   // Register OpenSHMEM to LLVM conversion interface
   mlir::openshmem::registerConvertOpenSHMEMToLLVMInterface(registry);
 
-  // Register OpenSHMEM CIR passes
+#ifdef ENABLE_CLANGIR
+  // Register OpenSHMEM CIR passes (only when building with ClangIR incubator)
   mlir::openshmem::cir::registerOpenSHMEMCIRPasses();
+#endif
 
   // Register our OpenSHMEM conversion pass using global static
   static mlir::PassPipelineRegistration<> registerOpenSHMEMPass(

@@ -8,12 +8,13 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"/.. && pwd -P)"
 LLVM_SRC_DIR="${LLVM_SRC_DIR:-${ROOT_DIR}/llvm-project}"
-BUILD_DIR="${BUILD_DIR:-${ROOT_DIR}/build}"
+BUILD_DIR="${BUILD_DIR:-${ROOT_DIR}/build-upstream}"
 GENERATOR="${GENERATOR:-Ninja}"
 CMAKE_BUILD_TYPE="${CMAKE_BUILD_TYPE:-Release}"
 TOTAL_CORES="$(nproc)"
 DEFAULT_CORES=$(( TOTAL_CORES / 2 ))
 if (( DEFAULT_CORES < 1 )); then DEFAULT_CORES=1; fi
+unset CORES
 CORES="${CORES:-${DEFAULT_CORES}}"
 
 echo "==> Project root : ${ROOT_DIR}"
@@ -31,6 +32,9 @@ if [[ ! -d "${LLVM_SRC_DIR}" ]]; then
 fi
 
 # If MLIR_DIR/LLVM_DIR are not provided, try to auto-detect from llvm-project build/install trees.
+MLIR_DIR="${MLIR_DIR:-}"
+LLVM_DIR="${LLVM_DIR:-}"
+
 detect_pkg_dir() {
   local pattern
   for pattern in "$@"; do
@@ -45,9 +49,6 @@ detect_pkg_dir() {
   done
   return 1
 }
-
-MLIR_DIR="${MLIR_DIR:-}"
-LLVM_DIR="${LLVM_DIR:-}"
 
 if [[ -z "${MLIR_DIR}" ]]; then
   MLIR_DIR=$(detect_pkg_dir \
@@ -72,6 +73,11 @@ fi
 echo "==> Using MLIR_DIR: ${MLIR_DIR}"
 echo "==> Using LLVM_DIR: ${LLVM_DIR}"
 
+# Derive the LLVM project build directory for locating clang headers
+LLVM_CMAKE_DIR="$(dirname "${LLVM_DIR}")"
+LLVM_LIB_DIR="$(dirname "${LLVM_CMAKE_DIR}")"
+LLVM_PROJECT_BUILD_DIR="$(dirname "${LLVM_LIB_DIR}")"
+
 mkdir -p "${BUILD_DIR}"
 
 echo "==> Configuring CMake..."
@@ -80,7 +86,9 @@ cmake -G "${GENERATOR}" \
   -B "${BUILD_DIR}" \
   -DCMAKE_BUILD_TYPE="${CMAKE_BUILD_TYPE}" \
   -DMLIR_DIR="${MLIR_DIR}" \
-  -DLLVM_DIR="${LLVM_DIR}"
+  -DLLVM_DIR="${LLVM_DIR}" \
+  -DLLVM_PROJECT_SOURCE_DIR="${LLVM_SRC_DIR}" \
+  -DLLVM_PROJECT_BUILD_DIR="${LLVM_PROJECT_BUILD_DIR}"
 
 echo "==> Building..."
 cmake --build "${BUILD_DIR}" -- -j"${CORES}"

@@ -28,6 +28,7 @@ TOOLCHAIN="${TOOLCHAIN:-}"
 TOTAL_CORES="$(nproc)"
 DEFAULT_CORES=$(( TOTAL_CORES / 2 ))
 if (( DEFAULT_CORES < 1 )); then DEFAULT_CORES=1; fi
+unset CORES
 CORES="${CORES:-${DEFAULT_CORES}}"
 # Sanity bounds for CORES
 if ! [[ "${CORES}" =~ ^[0-9]+$ ]]; then CORES=${DEFAULT_CORES}; fi

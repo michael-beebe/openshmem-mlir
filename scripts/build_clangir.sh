@@ -8,12 +8,14 @@ CLANGIR_REPO="${CLANGIR_REPO:-https://github.com/llvm/clangir.git}"
 CLANGIR_BRANCH="${CLANGIR_BRANCH:-main}"
 CLANGIR_SRC_DIR="${CLANGIR_SRC_DIR:-${ROOT_DIR}/clangir}"
 CLANGIR_BUILD_DIR="${CLANGIR_BUILD_DIR:-${CLANGIR_SRC_DIR}/build-main}"
+CLANGIR_INSTALL_DIR="${CLANGIR_INSTALL_DIR:-${CLANGIR_SRC_DIR}/install}"
 GENERATOR="${GENERATOR:-Ninja}"
 CMAKE_BUILD_TYPE="${CMAKE_BUILD_TYPE:-Release}"
 TOTAL_CORES="$(nproc)"
 DEFAULT_CORES=$(( TOTAL_CORES / 2 ))
 if (( DEFAULT_CORES < 1 )); then DEFAULT_CORES=1; fi
 # Allow override via env; default to half the cores
+unset CORES
 CORES="${CORES:-${DEFAULT_CORES}}"
 # Sanity bounds
 if ! [[ "$CORES" =~ ^[0-9]+$ ]]; then CORES=${DEFAULT_CORES}; fi
@@ -23,6 +25,7 @@ if (( CORES > TOTAL_CORES )); then CORES=${TOTAL_CORES}; fi
 echo "==> ClangIR source : ${CLANGIR_SRC_DIR}"
 echo "==> Branch        : ${CLANGIR_BRANCH}"
 echo "==> Build dir     : ${CLANGIR_BUILD_DIR}"
+echo "==> Install dir   : ${CLANGIR_INSTALL_DIR}"
 echo "==> Parallel jobs : ${CORES}"
 
 if [[ ! -d "${CLANGIR_SRC_DIR}/.git" ]]; then
@@ -42,6 +45,7 @@ echo "==> Configuring..."
 cmake -G "${GENERATOR}" \
   -S "${CLANGIR_SRC_DIR}/llvm" \
   -B "${CLANGIR_BUILD_DIR}" \
+  -DCMAKE_INSTALL_PREFIX="${CLANGIR_INSTALL_DIR}" \
   -DLLVM_ENABLE_PROJECTS="clang;mlir" \
   -DCLANG_ENABLE_CIR=ON \
   -DCMAKE_BUILD_TYPE="${CMAKE_BUILD_TYPE}" \
