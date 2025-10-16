@@ -21,7 +21,7 @@ fi
 
 # Get the project root directory
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BUILD_DIR="${PROJECT_ROOT}/build"
+BUILD_DIR="${PROJECT_ROOT}/build-upstream"
 TEST_DIR="${PROJECT_ROOT}/test"
 SHMEM_MLIR_OPT="${BUILD_DIR}/tools/shmem-mlir-opt/shmem-mlir-opt"
 

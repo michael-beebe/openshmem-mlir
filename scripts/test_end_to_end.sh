@@ -82,14 +82,15 @@ fi
 
 # Paths
 LLVM_BUILD="${ROOT_DIR}/llvm-project/build-release-21.x"
-SHMEM_CIR_OPT="${ROOT_DIR}/build/tools/shmem-cir-opt/shmem-cir-opt"
+SHMEM_MLIR_OPT="${ROOT_DIR}/build/tools/shmem-mlir-opt/shmem-mlir-opt"
 SOS_DIR="${ROOT_DIR}/openshmem-runtime/SOS-v1.5.2"
 
 # Step 3 tool/flags (overridable to use ClangIR incubator plugins or tools)
 # Defaults:
-#   - Use our shmem-cir-opt tool and run the built-in --cir-to-llvm pass
+#   - Use our shmem-mlir-opt tool for OpenSHMEM passes
+#   - Use clang's cir-opt for CIR→LLVM passes by default
 #   - Allow callers to append flags (e.g., --load-dialect-plugin/--load-pass-plugin) via EXTRA_STEP3_FLAGS
-CIR_TO_LLVM_TOOL="${CIR_TO_LLVM_TOOL:-${SHMEM_CIR_OPT}}"
+CIR_TO_LLVM_TOOL="${CIR_TO_LLVM_TOOL:-${LLVM_BUILD}/bin/cir-opt}"
 CIR_TO_LLVM_PASSES="${CIR_TO_LLVM_PASSES:---cir-to-llvm}"
 EXTRA_STEP3_FLAGS="${EXTRA_STEP3_FLAGS:-}"
 
@@ -99,8 +100,14 @@ if [[ ! -x "${LLVM_BUILD}/bin/clang" ]]; then
   exit 1
 fi
 
-if [[ ! -x "${SHMEM_CIR_OPT}" ]]; then
-  echo "ERROR: shmem-cir-opt not found. Run ./scripts/build_openshmem_mlir.sh first" >&2
+if [[ ! -x "${SHMEM_MLIR_OPT}" ]]; then
+  echo "ERROR: shmem-mlir-opt not found. Run ./scripts/build_openshmem_mlir.sh first" >&2
+  exit 1
+fi
+
+if [[ ! -x "${CIR_TO_LLVM_TOOL}" ]]; then
+  echo "ERROR: cir-opt driver not found at ${CIR_TO_LLVM_TOOL}" >&2
+  echo "Set CIR_TO_LLVM_TOOL to your preferred binary (e.g., <clangir-build>/bin/cir-opt)" >&2
   exit 1
 fi
 
@@ -203,7 +210,7 @@ EXTRA_STEP2_FLAGS="${EXTRA_STEP2_FLAGS:-}"
 if [[ -n "${EXTRA_STEP2_FLAGS}" ]]; then
   echo "  Extra: ${EXTRA_STEP2_FLAGS}"
 fi
-"${SHMEM_CIR_OPT}" \
+"${SHMEM_MLIR_OPT}" \
   ${EXTRA_STEP2_FLAGS} \
   "${OUTPUT_DIR}/1.${BASENAME}.mlir" \
   --convert-cir-to-openshmem \
@@ -227,7 +234,7 @@ echo ""
 
 # Step 4: Convert OpenSHMEM to LLVM (now all types are LLVM types)
 echo "Step 4: Converting OpenSHMEM to LLVM..."
-"${SHMEM_CIR_OPT}" \
+"${SHMEM_MLIR_OPT}" \
   "${OUTPUT_DIR}/3.${BASENAME}.partial-llvm.mlir" \
   --convert-openshmem-to-llvm \
   -o "${OUTPUT_DIR}/4.${BASENAME}.llvm-with-casts.mlir"
