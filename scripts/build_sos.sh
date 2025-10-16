@@ -4,7 +4,6 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"/.. && pwd -P)"
 source "${ROOT_DIR}/scripts/lib/toolchain.sh"
-
 print_usage() {
   cat <<EOF
 Usage: $0 [options]
@@ -27,7 +26,6 @@ EOF
 # Build libfabric and Sandia OpenSHMEM (SOS) using local LLVM clang.
 # This provides oshcc wrapper and libshmem for testing OpenSHMEM programs.
 #
-# Dependencies are built to <repo_root>/openshmem-runtime/
 # - libfabric-<version>/
 # - SOS-<version>/
 #
@@ -75,6 +73,7 @@ while [[ $# -gt 0 ]]; do
       exit 1
       ;;
   esac
+done
 
 
 if [[ -n "${SCRIPT_TOOLCHAIN}" ]]; then
@@ -301,4 +300,3 @@ Example usage:
 
 You can now compile C programs with #include <shmem.h> and link with -lshmem
 EOF
-
