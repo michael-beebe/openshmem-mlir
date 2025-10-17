@@ -133,11 +133,19 @@ ENV_LLVM_BUILD="${LLVM_BUILD:-}"
 LLVM_BUILD="${ENV_LLVM_BUILD:-${TC_BIN_DIR%/bin}}"
 LLVM_BIN_DIR="${LLVM_BUILD}/bin"
 CLANG_BIN="${LLVM_BIN_DIR}/clang"
+CLANGXX_BIN="${LLVM_BIN_DIR}/clang++"
 MLIR_OPT_BIN="${LLVM_BIN_DIR}/mlir-opt"
 MLIR_TRANSLATE_BIN="${LLVM_BIN_DIR}/mlir-translate"
 LLC_BIN="${LLVM_BIN_DIR}/llc"
 
-CIR_TO_LLVM_TOOL="${CIR_TO_LLVM_TOOL:-${TC_CIR_OPT}}"
+CIR_TO_LLVM_TOOL="${CIR_TO_LLVM_TOOL:-}"
+if [[ -z "${CIR_TO_LLVM_TOOL}" ]]; then
+  if [[ -x "${SHMEM_MLIR_OPT}" ]]; then
+    CIR_TO_LLVM_TOOL="${SHMEM_MLIR_OPT}"
+  else
+    CIR_TO_LLVM_TOOL="${TC_CIR_OPT}"
+  fi
+fi
 CIR_TO_LLVM_PASSES="${CIR_TO_LLVM_PASSES:---cir-to-llvm}"
 EXTRA_STEP3_FLAGS="${EXTRA_STEP3_FLAGS:-}"
 
@@ -262,6 +270,8 @@ echo "Step 1: C → ClangIR (with OpenSHMEM headers)..."
 if [[ ${HAS_RUNTIME} -eq 1 ]]; then
   # Use oshcc with -fclangir to get proper headers and include paths
   # Suppress linker-related warnings since we're only compiling, not linking
+  SHMEM_CC="${CLANG_BIN}" \
+  SHMEM_CXX="${CLANGXX_BIN}" \
   oshcc -fclangir -emit-cir \
     -Wno-unused-command-line-argument \
     "${INPUT_C}" \
@@ -325,6 +335,7 @@ echo ""
 # Step 6: LLVM MLIR → LLVM IR
 echo "Step 6: LLVM MLIR → LLVM IR..."
 "${MLIR_TRANSLATE_BIN}" \
+  --allow-unregistered-dialect \
   --mlir-to-llvmir \
   "${OUTPUT_DIR}/5.${BASENAME}.llvm.mlir" \
   -o "${OUTPUT_DIR}/6.${BASENAME}.ll"
@@ -354,6 +365,8 @@ if [[ ${HAS_RUNTIME} -eq 1 ]]; then
   
   # Step 9: Object file → Binary
   echo "Step 9: Object file → Binary (linking)..."
+  SHMEM_CC="${CLANG_BIN}" \
+  SHMEM_CXX="${CLANGXX_BIN}" \
   oshcc \
     "${OUTPUT_DIR}/8.${BASENAME}.o" \
     -o "${OUTPUT_DIR}/9.${BASENAME}"

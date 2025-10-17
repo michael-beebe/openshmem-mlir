@@ -54,6 +54,7 @@ if (HAVE_CLANGIR)
       MLIROpenSHMEMCIRPasses
       MLIROpenSHMEMCIRRewriters
       MLIRCIR
+      clangCIRLoweringDirectToLLVM
   )
 endif()
 
