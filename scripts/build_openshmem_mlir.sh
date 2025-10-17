@@ -11,7 +11,7 @@ Usage: $0 [options]
 Configure and build the OpenSHMEM MLIR project against a selected LLVM/Clang toolchain.
 
 Options:
-  -t, --toolchain <id>   Toolchain to use (default: upstream)
+  -t, --toolchain <id>   Toolchain to use (default: incubator)
   -b, --build-dir <dir>  Build directory (default: build-<toolchain>)
   -j, --jobs <N>         Parallel build jobs (default: nproc/2)
   -G, --generator <gen>  CMake generator (default: Ninja)
@@ -23,7 +23,7 @@ Environment overrides:
 USAGE
 }
 
-TOOLCHAIN="upstream"
+TOOLCHAIN="incubator"
 CLI_BUILD_DIR=""
 CLI_JOBS=""
 CLI_GENERATOR=""

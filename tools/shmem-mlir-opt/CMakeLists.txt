@@ -2,6 +2,8 @@ add_executable(shmem-mlir-opt
   shmem-mlir-opt.cpp
 )
 
+llvm_update_compile_flags(shmem-mlir-opt)
+
 # If ClangIR is available, define the flag and add CIR support
 if (HAVE_CLANGIR)
   target_compile_definitions(shmem-mlir-opt PRIVATE ENABLE_CLANGIR)
@@ -12,9 +14,7 @@ endif()
 
 # Link against MLIR driver components and the built OpenSHMEM libraries so
 # the dialect and passes are available inside the tool.
-mlir_check_all_link_libraries(shmem-mlir-opt)
-
-target_link_libraries(shmem-mlir-opt
+mlir_target_link_libraries(shmem-mlir-opt
   PRIVATE
     MLIRAsmParser
     MLIRParser
@@ -41,7 +41,7 @@ target_link_libraries(shmem-mlir-opt
 # Link the OpenSHMEM libraries (use the CMake targets so transitive
 # dependencies and link ordering are handled by CMake). Place them after
 # MLIR libraries so their object files are available to resolve symbols.
-target_link_libraries(shmem-mlir-opt
+mlir_target_link_libraries(shmem-mlir-opt
   PRIVATE
     MLIROpenSHMEMToLLVM
     MLIROpenSHMEMDialect
@@ -49,11 +49,12 @@ target_link_libraries(shmem-mlir-opt
 
 # Only link CIR libraries when ClangIR is available
 if (HAVE_CLANGIR)
-  target_link_libraries(shmem-mlir-opt
+  mlir_target_link_libraries(shmem-mlir-opt
     PRIVATE
       MLIROpenSHMEMCIRPasses
       MLIROpenSHMEMCIRRewriters
       MLIRCIR
+      clangCIRLoweringDirectToLLVM
   )
 endif()
 
@@ -75,3 +76,5 @@ endif()
 if(MLIR_EXPORT_SYMBOLS_FOR_PLUGINS)
   export_executable_symbols_for_plugins(shmem-mlir-opt)
 endif()
+
+mlir_check_all_link_libraries(shmem-mlir-opt)

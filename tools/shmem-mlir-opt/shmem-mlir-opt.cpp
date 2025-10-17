@@ -10,6 +10,16 @@
 #ifdef ENABLE_CLANGIR
 #include "OpenSHMEMCIR/Passes.h"
 #include "clang/CIR/Dialect/IR/CIRDialect.h"
+#include "clang/CIR/Dialect/Passes.h"
+#include "clang/CIR/Passes.h"
+#include "mlir/Conversion/ReconcileUnrealizedCasts/ReconcileUnrealizedCasts.h"
+#include "mlir/Dialect/DLTI/DLTI.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/Dialect/LLVMIR/LLVMDialect.h"
+#include "mlir/Dialect/MemRef/IR/MemRef.h"
+
+struct CIRToLLVMPipelineOptions
+  : public mlir::PassPipelineOptions<CIRToLLVMPipelineOptions> {};
 #endif
 
 int main(int argc, char **argv) {
@@ -26,6 +36,13 @@ int main(int argc, char **argv) {
   registry.insert<cir::CIRDialect>();
 #endif
 
+#ifdef ENABLE_CLANGIR
+  // Register additional dialects typically used during CIR lowering that are
+  // not covered by registerAllDialects for certain builds.
+  registry.insert<mlir::memref::MemRefDialect, mlir::LLVM::LLVMDialect,
+                  mlir::DLTIDialect, mlir::func::FuncDialect>();
+#endif
+
   // Explicitly register arith dialect to ensure it's available
   registry.insert<mlir::arith::ArithDialect>();
 
@@ -35,6 +52,21 @@ int main(int argc, char **argv) {
 #ifdef ENABLE_CLANGIR
   // Register OpenSHMEM CIR passes (only when building with ClangIR incubator)
   mlir::openshmem::cir::registerOpenSHMEMCIRPasses();
+
+  // Make the CIR-to-LLVM pipeline available so this driver can act as a
+  // full replacement for cir-opt when desired.
+  mlir::PassPipelineRegistration<CIRToLLVMPipelineOptions>
+      cirToLLVMPipeline(
+          "cir-to-llvm", "Convert CIR to LLVM dialect",
+          [](mlir::OpPassManager &pm,
+             const CIRToLLVMPipelineOptions &options) {
+            pm.addPass(cir::direct::createConvertCIRToLLVMPass());
+          });
+
+  // Reconcile unrealized casts helper pass can be useful after conversions.
+  ::mlir::registerPass([]() -> std::unique_ptr<::mlir::Pass> {
+    return mlir::createReconcileUnrealizedCastsPass();
+  });
 #endif
 
   // Register our OpenSHMEM conversion pass using global static

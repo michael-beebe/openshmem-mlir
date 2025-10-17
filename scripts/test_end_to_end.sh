@@ -41,7 +41,7 @@ Options:
   --help, -h           Show this help message
 
 Environment overrides:
-  TOOLCHAIN            Default toolchain selection (defaults to upstream)
+  TOOLCHAIN            Default toolchain selection (defaults to incubator)
   PROJECT_BUILD_DIR    Override project build directory used for binaries
   LLVM_BUILD           Override LLVM/Clang build directory
   CIR_TO_LLVM_TOOL     Path to cir-opt-compatible binary for Step 3
@@ -52,7 +52,7 @@ EOF
 DO_CLEAN=0
 TEST_NAME_ARG=""
 INPUT_FILE_ARG=""
-TOOLCHAIN="${TOOLCHAIN:-upstream}"
+TOOLCHAIN="${TOOLCHAIN:-incubator}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -127,19 +127,44 @@ toolchain_resolve "${TOOLCHAIN}"
 DEFAULT_PROJECT_BUILD_DIR="${TC_PROJECT_BUILD_DIR_DEFAULT}"
 ENV_PROJECT_BUILD_DIR="${PROJECT_BUILD_DIR:-}"
 PROJECT_BUILD_DIR="${ENV_PROJECT_BUILD_DIR:-${DEFAULT_PROJECT_BUILD_DIR}}"
-SHMEM_MLIR_OPT="${PROJECT_BUILD_DIR}/tools/shmem-mlir-opt/shmem-mlir-opt"
+SHMEM_MLIR_OPT_CANDIDATES=(
+  "${PROJECT_BUILD_DIR}/bin/shmem-mlir-opt"
+  "${PROJECT_BUILD_DIR}/tools/shmem-mlir-opt/shmem-mlir-opt"
+)
+SHMEM_MLIR_OPT=""
+for candidate in "${SHMEM_MLIR_OPT_CANDIDATES[@]}"; do
+  if [[ -x "${candidate}" ]]; then
+    SHMEM_MLIR_OPT="${candidate}"
+    break
+  fi
+done
+if [[ -z "${SHMEM_MLIR_OPT}" ]]; then
+  SHMEM_MLIR_OPT="${SHMEM_MLIR_OPT_CANDIDATES[0]}"
+fi
 
 ENV_LLVM_BUILD="${LLVM_BUILD:-}"
 LLVM_BUILD="${ENV_LLVM_BUILD:-${TC_BIN_DIR%/bin}}"
 LLVM_BIN_DIR="${LLVM_BUILD}/bin"
 CLANG_BIN="${LLVM_BIN_DIR}/clang"
+CLANGXX_BIN="${LLVM_BIN_DIR}/clang++"
 MLIR_OPT_BIN="${LLVM_BIN_DIR}/mlir-opt"
 MLIR_TRANSLATE_BIN="${LLVM_BIN_DIR}/mlir-translate"
 LLC_BIN="${LLVM_BIN_DIR}/llc"
 
-CIR_TO_LLVM_TOOL="${CIR_TO_LLVM_TOOL:-${TC_CIR_OPT}}"
+CIR_TO_LLVM_TOOL="${CIR_TO_LLVM_TOOL:-}"
+if [[ -z "${CIR_TO_LLVM_TOOL}" ]]; then
+  if [[ -x "${SHMEM_MLIR_OPT}" ]] && "${SHMEM_MLIR_OPT}" --help 2>&1 | grep -q "cir-to-llvm"; then
+    CIR_TO_LLVM_TOOL="${SHMEM_MLIR_OPT}"
+  else
+    CIR_TO_LLVM_TOOL="${TC_CIR_OPT}"
+  fi
+fi
 CIR_TO_LLVM_PASSES="${CIR_TO_LLVM_PASSES:---cir-to-llvm}"
 EXTRA_STEP3_FLAGS="${EXTRA_STEP3_FLAGS:-}"
+
+if [[ "${CIR_TO_LLVM_TOOL}" == "${TC_CIR_OPT}" ]]; then
+  EXTRA_STEP3_FLAGS="--allow-unregistered-dialect ${EXTRA_STEP3_FLAGS}"
+fi
 
 # Clean tmp/ directory if requested
 if [[ ${DO_CLEAN} -eq 1 ]]; then
@@ -161,7 +186,11 @@ if [[ ! -x "${CLANG_BIN}" ]]; then
 fi
 
 if [[ ! -x "${SHMEM_MLIR_OPT}" ]]; then
-  echo "ERROR: shmem-mlir-opt not found. Run ./scripts/build_openshmem_mlir.sh first" >&2
+  echo "ERROR: shmem-mlir-opt not found. Run ./scripts/build_openshmem_mlir.sh first." >&2
+  echo "Checked the following locations:" >&2
+  for candidate in "${SHMEM_MLIR_OPT_CANDIDATES[@]}"; do
+    echo "  - ${candidate}" >&2
+  done
   exit 1
 fi
 
@@ -245,7 +274,10 @@ else
 fi
 
 BASENAME="$(basename "${INPUT_C}" .c)"
-OUTPUT_DIR="${ROOT_DIR}/tmp/${TEST_NAME}"
+DATE_STAMP="$(date +"%Y%m%d")"
+TIME_STAMP="$(date +"%H%M%S")"
+OUTPUT_DIR_NAME="${TEST_NAME}-${TOOLCHAIN}-${DATE_STAMP}-${TIME_STAMP}"
+OUTPUT_DIR="${ROOT_DIR}/tmp/${OUTPUT_DIR_NAME}"
 
 # Create output directory
 mkdir -p "${OUTPUT_DIR}"
@@ -262,6 +294,8 @@ echo "Step 1: C → ClangIR (with OpenSHMEM headers)..."
 if [[ ${HAS_RUNTIME} -eq 1 ]]; then
   # Use oshcc with -fclangir to get proper headers and include paths
   # Suppress linker-related warnings since we're only compiling, not linking
+  SHMEM_CC="${CLANG_BIN}" \
+  SHMEM_CXX="${CLANGXX_BIN}" \
   oshcc -fclangir -emit-cir \
     -Wno-unused-command-line-argument \
     "${INPUT_C}" \
@@ -325,6 +359,7 @@ echo ""
 # Step 6: LLVM MLIR → LLVM IR
 echo "Step 6: LLVM MLIR → LLVM IR..."
 "${MLIR_TRANSLATE_BIN}" \
+  --allow-unregistered-dialect \
   --mlir-to-llvmir \
   "${OUTPUT_DIR}/5.${BASENAME}.llvm.mlir" \
   -o "${OUTPUT_DIR}/6.${BASENAME}.ll"
@@ -354,6 +389,8 @@ if [[ ${HAS_RUNTIME} -eq 1 ]]; then
   
   # Step 9: Object file → Binary
   echo "Step 9: Object file → Binary (linking)..."
+  SHMEM_CC="${CLANG_BIN}" \
+  SHMEM_CXX="${CLANGXX_BIN}" \
   oshcc \
     "${OUTPUT_DIR}/8.${BASENAME}.o" \
     -o "${OUTPUT_DIR}/9.${BASENAME}"

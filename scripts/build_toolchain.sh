@@ -11,7 +11,7 @@ Usage: $0 [options]
 Build an LLVM/Clang toolchain used by the OpenSHMEM MLIR project.
 
 Options:
-  -t, --toolchain <id>   Toolchain to build (default: upstream)
+  -t, --toolchain <id>   Toolchain to build (default: incubator)
   -j, --jobs <N>         Override parallel build jobs (defaults to nproc/2)
   -h, --help             Show this help message
 
@@ -25,7 +25,7 @@ $(toolchain_help_text)
 EOF
 }
 
-TOOLCHAIN="upstream"
+TOOLCHAIN="incubator"
 CLI_JOBS=""
 
 while [[ $# -gt 0 ]]; do

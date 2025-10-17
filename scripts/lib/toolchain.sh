@@ -207,7 +207,7 @@ toolchain_resolve() {
       declare -g TC_BIN_DIR="${bin_dir}"
       declare -g TC_CIR_OPT="${bin_dir}/cir-opt"
       declare -g TC_CLANG="${bin_dir}/clang"
-      declare -g TC_PROJECT_BUILD_DIR_DEFAULT="${ROOT_DIR}/build-clangir"
+  declare -g TC_PROJECT_BUILD_DIR_DEFAULT="${ROOT_DIR}/build-incubator"
       ;;
   esac
 }

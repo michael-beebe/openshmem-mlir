@@ -11,6 +11,16 @@ We've been working to get the 2DHeatStencil test to compile through the full pip
 
 ---
 
+## 2025-10-17 - Incubator Pipeline Notes
+
+- Observed `cir.cast` parse failures when running `test_end_to_end.sh --toolchain incubator`; `shmem-mlir-opt` (and `cir-opt`) could not read CIR emitted via `oshcc` because the wrapper defaulted to the upstream 21.x clang.
+- Root cause: SOS `oshcc` hard-coded its compiler to `${repo}/llvm-project/build-release-21.x/bin/clang`, which emits legacy CIR syntax (`cir.cast(array_to_ptrdecay, ...)`) that the incubator parser rejects.
+- Fix: Prefix `oshcc` invocations with `SHMEM_CC`/`SHMEM_CXX` pointing at the resolved toolchain clang binaries so the wrapper uses the same toolchain we requested.
+- Updated `scripts/test_end_to_end.sh` to set those environment variables for both the initial CIR emission and final link step; incubator runs now see consistent CIR syntax.
+- Updated `shmem-mlir-opt` so both incubator and upstream builds register the `cir-to-llvm` pipeline; the end-to-end harness now probes for that support and prefers the project driver, falling back to the toolchain `cir-opt` only if necessary (adding `--allow-unregistered-dialect` in that case).
+
+---
+
 ## Original Code State (Before Modifications)
 
 ### Type System Design
