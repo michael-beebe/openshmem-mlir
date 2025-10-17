@@ -14,21 +14,93 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Parse command line arguments
+usage() {
+        local script_name
+        script_name="$(basename "$0")"
+        cat <<EOF
+Usage: ./${script_name} [options]
+
+Options:
+    --toolchain <id>  Select LLVM toolchain (upstream, incubator, or auto)
+    --verbose, -v     Enable verbose conversion output
+    --help, -h        Show this help message
+
+Environment overrides:
+    TOOLCHAIN         Default toolchain selection (defaults to upstream)
+    BUILD_DIR         Project build directory (defaults to helper-provided path)
+EOF
+}
+
 VERBOSE=0
-if [[ "$1" == "--verbose" || "$1" == "-v" ]]; then
-    VERBOSE=1
-fi
+TOOLCHAIN="${TOOLCHAIN:-upstream}"
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --verbose|-v)
+            VERBOSE=1
+            shift
+            ;;
+        --toolchain)
+            if [[ -z "${2:-}" ]]; then
+                echo "ERROR: --toolchain requires an argument" >&2
+                usage >&2
+                exit 1
+            fi
+            TOOLCHAIN="$2"
+            shift 2
+            ;;
+        --help|-h)
+            usage
+            exit 0
+            ;;
+        --*)
+            echo "ERROR: Unknown option: $1" >&2
+            usage >&2
+            exit 1
+            ;;
+        *)
+            echo "ERROR: Unexpected positional argument: $1" >&2
+            usage >&2
+            exit 1
+            ;;
+    esac
+done
 
 # Get the project root directory
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "${PROJECT_ROOT}/scripts/lib/toolchain.sh"
 
-TOOLCHAIN="${TOOLCHAIN:-upstream}"
+if [[ "${TOOLCHAIN}" == "auto" ]]; then
+    DETECTED_TOOLCHAIN=""
+    for candidate in incubator upstream; do
+        toolchain_resolve "${candidate}"
+        if [[ -x "${TC_CLANG}" ]]; then
+            TOOLCHAIN="${candidate}"
+            DETECTED_TOOLCHAIN="${candidate}"
+            break
+        fi
+    done
+    if [[ -z "${DETECTED_TOOLCHAIN}" ]]; then
+        echo "ERROR: --toolchain auto could not find a usable clang toolchain." >&2
+        echo "Run ./scripts/build_toolchain.sh --toolchain <id> first." >&2
+        exit 1
+    fi
+else
+    toolchain_require "${TOOLCHAIN}"
+fi
+
 toolchain_resolve "${TOOLCHAIN}"
 
-BUILD_DIR="${BUILD_DIR:-${TC_PROJECT_BUILD_DIR_DEFAULT}}"
+DEFAULT_BUILD_DIR="${TC_PROJECT_BUILD_DIR_DEFAULT}"
+ENV_BUILD_DIR="${BUILD_DIR:-}"
+BUILD_DIR="${ENV_BUILD_DIR:-${DEFAULT_BUILD_DIR}}"
 TEST_DIR="${PROJECT_ROOT}/test"
 SHMEM_MLIR_OPT="${BUILD_DIR}/tools/shmem-mlir-opt/shmem-mlir-opt"
+
+LLVM_BUILD_DIR="${TC_BIN_DIR%/bin}"
+echo "Using LLVM toolchain (${TOOLCHAIN}): ${LLVM_BUILD_DIR}"
+echo "Using project build       : ${BUILD_DIR}"
+echo ""
 
 echo -e "${BLUE}╔════════════════════════════════════════════════════════════╗${NC}"
 echo -e "${BLUE}║   OpenSHMEM MLIR Comprehensive Conversion Test Suite       ║${NC}"

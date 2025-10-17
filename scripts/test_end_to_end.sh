@@ -28,6 +28,27 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"/.. && pwd -P)"
 source "${ROOT_DIR}/scripts/lib/toolchain.sh"
 
 # Parse command-line arguments
+usage() {
+  local script_name
+  script_name="$(basename "$0")"
+  cat <<EOF
+Usage: ./${script_name} [options] [input_file]
+
+Options:
+  --test <TestName>    Run a specific test by name (e.g., --test HelloWorld)
+  --clean              Remove tmp/ directory before running
+  --toolchain <id>     Select LLVM toolchain (upstream, incubator, or auto)
+  --help, -h           Show this help message
+
+Environment overrides:
+  TOOLCHAIN            Default toolchain selection (defaults to upstream)
+  PROJECT_BUILD_DIR    Override project build directory used for binaries
+  LLVM_BUILD           Override LLVM/Clang build directory
+  CIR_TO_LLVM_TOOL     Path to cir-opt-compatible binary for Step 3
+  CIR_TO_LLVM_PASSES   Custom pass pipeline for Step 3 conversion
+EOF
+}
+
 DO_CLEAN=0
 TEST_NAME_ARG=""
 INPUT_FILE_ARG=""
@@ -42,6 +63,7 @@ while [[ $# -gt 0 ]]; do
     --toolchain)
       if [[ -z "${2:-}" ]]; then
         echo "ERROR: --toolchain requires an argument" >&2
+        usage >&2
         exit 1
       fi
       TOOLCHAIN="$2"
@@ -50,25 +72,21 @@ while [[ $# -gt 0 ]]; do
     --test)
       if [[ -z "${2:-}" ]]; then
         echo "ERROR: --test requires a test name argument" >&2
+        usage >&2
         exit 1
       fi
       TEST_NAME_ARG="$2"
       shift 2
       ;;
     --help|-h)
-      echo "Usage: $0 [options] [input_file]"
-      echo ""
-      echo "Options:"
-      echo "  --test <TestName>    Run a specific test by name (e.g., --test HelloWorld)"
-      echo "  --clean              Remove tmp/ directory before running"
-  echo "  --toolchain <id>     Select LLVM toolchain (upstream or incubator)"
-      echo "  --help, -h           Show this help message"
+      usage
+      script_name="$(basename "$0")"
       echo ""
       echo "Examples:"
-      echo "  $0                                    # Run default test (HelloWorld)"
-      echo "  $0 --test HelloWorld                  # Run HelloWorld test"
-      echo "  $0 --clean --test HelloWorld          # Clean then run HelloWorld"
-      echo "  $0 test/EndToEnd/Atomics/test.c       # Run specific file"
+      echo "  ./${script_name}                                    # Run default test (HelloWorld)"
+      echo "  ./${script_name} --test HelloWorld                  # Run HelloWorld test"
+      echo "  ./${script_name} --clean --test HelloWorld          # Clean then run HelloWorld"
+      echo "  ./${script_name} test/EndToEnd/Atomics/test.c       # Run specific file"
       exit 0
       ;;
     -*)
@@ -101,7 +119,6 @@ if [[ "${TOOLCHAIN}" == "auto" ]]; then
   fi
 else
   toolchain_require "${TOOLCHAIN}"
-  toolchain_resolve "${TOOLCHAIN}"
 fi
 
 # Ensure globals reflect the final toolchain choice

@@ -18,7 +18,7 @@ OPENSHMEM_TOOLCHAIN_LIB_SOURCED=1
 
 # Compute repository root: <repo>/scripts/lib/toolchain.sh -> go up two levels.
 _TOOLCHAIN_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
-ROOT_DIR="${ROOT_DIR:-$(cd "${_TOOLCHAIN_LIB_DIR}/.." && pwd -P)}"
+ROOT_DIR="${ROOT_DIR:-$(cd "${_TOOLCHAIN_LIB_DIR}/../.." && pwd -P)}"
 
 #------------------------------------------------------------------------------
 # Public helper functions
