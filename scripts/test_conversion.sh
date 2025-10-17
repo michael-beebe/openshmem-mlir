@@ -26,13 +26,13 @@ Options:
     --help, -h        Show this help message
 
 Environment overrides:
-    TOOLCHAIN         Default toolchain selection (defaults to upstream)
+    TOOLCHAIN         Default toolchain selection (defaults to incubator)
     BUILD_DIR         Project build directory (defaults to helper-provided path)
 EOF
 }
 
 VERBOSE=0
-TOOLCHAIN="${TOOLCHAIN:-upstream}"
+TOOLCHAIN="${TOOLCHAIN:-incubator}"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -95,7 +95,20 @@ DEFAULT_BUILD_DIR="${TC_PROJECT_BUILD_DIR_DEFAULT}"
 ENV_BUILD_DIR="${BUILD_DIR:-}"
 BUILD_DIR="${ENV_BUILD_DIR:-${DEFAULT_BUILD_DIR}}"
 TEST_DIR="${PROJECT_ROOT}/test"
-SHMEM_MLIR_OPT="${BUILD_DIR}/tools/shmem-mlir-opt/shmem-mlir-opt"
+SHMEM_MLIR_OPT_CANDIDATES=(
+    "${BUILD_DIR}/bin/shmem-mlir-opt"
+    "${BUILD_DIR}/tools/shmem-mlir-opt/shmem-mlir-opt"
+)
+SHMEM_MLIR_OPT=""
+for candidate in "${SHMEM_MLIR_OPT_CANDIDATES[@]}"; do
+    if [[ -x "${candidate}" ]]; then
+        SHMEM_MLIR_OPT="${candidate}"
+        break
+    fi
+done
+if [[ -z "${SHMEM_MLIR_OPT}" ]]; then
+    SHMEM_MLIR_OPT="${SHMEM_MLIR_OPT_CANDIDATES[0]}"
+fi
 
 LLVM_BUILD_DIR="${TC_BIN_DIR%/bin}"
 echo "Using LLVM toolchain (${TOOLCHAIN}): ${LLVM_BUILD_DIR}"
@@ -113,9 +126,13 @@ if [[ ${VERBOSE} -eq 1 ]]; then
 fi
 
 # Check if shmem-mlir-opt exists
-if [[ ! -f "${SHMEM_MLIR_OPT}" ]]; then
-    echo -e "${RED}Error: shmem-mlir-opt not found at ${SHMEM_MLIR_OPT}${NC}"
+if [[ ! -x "${SHMEM_MLIR_OPT}" ]]; then
+    echo -e "${RED}Error: shmem-mlir-opt not found${NC}"
     echo "Please build the project first: ./scripts/build_openshmem_mlir.sh"
+    echo "Checked the following locations:"
+    for candidate in "${SHMEM_MLIR_OPT_CANDIDATES[@]}"; do
+        echo "  - ${candidate}"
+    done
     exit 1
 fi
 
