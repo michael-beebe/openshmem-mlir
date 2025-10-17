@@ -13,6 +13,35 @@ namespace mlir {
 namespace openshmem {
 namespace cir {
 
+static bool matchesTypedRMA(StringRef funcName, StringRef baseOp,
+                            StringRef prefix = "shmem_") {
+  if (!funcName.starts_with(prefix))
+    return false;
+
+  if (funcName == (prefix + baseOp).str())
+    return true;
+
+  StringRef rest = funcName.drop_front(prefix.size());
+  static constexpr StringRef typedTypes[] = {
+      "float",    "double",   "longdouble", "char",     "schar",
+      "short",    "int",      "long",       "longlong", "uchar",
+      "ushort",   "uint",     "ulong",      "ulonglong", "int8",
+      "int16",    "int32",    "int64",      "uint8",     "uint16",
+      "uint32",   "uint64",   "size"};
+
+  for (StringRef type : typedTypes) {
+    StringRef candidate = rest;
+    if (!candidate.consume_front(type))
+      continue;
+    if (!candidate.consume_front("_"))
+      continue;
+    if (candidate == baseOp)
+      return true;
+  }
+
+  return false;
+}
+
 // Helper function to create symmetric memref type
 static MemRefType createSymmetricMemRefType(MLIRContext *ctx) {
   auto symmetricMemSpace = openshmem::SymmetricMemorySpaceAttr::get(ctx);
@@ -67,7 +96,8 @@ public:
   LogicalResult matchAndRewrite(::cir::CallOp op,
                                 PatternRewriter &rewriter) const override {
     auto callee = op.getCallee();
-    if (!callee || callee.value() != "shmem_put")
+    if (!callee ||
+        !openshmem::cir::matchesTypedRMA(callee.value(), "put"))
       return failure();
 
     auto operands = op.getOperands();
@@ -96,7 +126,8 @@ public:
   LogicalResult matchAndRewrite(::cir::CallOp op,
                                 PatternRewriter &rewriter) const override {
     auto callee = op.getCallee();
-    if (!callee || callee.value() != "shmem_put_nbi")
+    if (!callee ||
+        !openshmem::cir::matchesTypedRMA(callee.value(), "put_nbi"))
       return failure();
 
     auto operands = op.getOperands();
@@ -124,7 +155,8 @@ public:
   LogicalResult matchAndRewrite(::cir::CallOp op,
                                 PatternRewriter &rewriter) const override {
     auto callee = op.getCallee();
-    if (!callee || callee.value() != "shmem_get")
+    if (!callee ||
+        !openshmem::cir::matchesTypedRMA(callee.value(), "get"))
       return failure();
 
     auto operands = op.getOperands();
@@ -152,7 +184,8 @@ public:
   LogicalResult matchAndRewrite(::cir::CallOp op,
                                 PatternRewriter &rewriter) const override {
     auto callee = op.getCallee();
-    if (!callee || callee.value() != "shmem_get_nbi")
+    if (!callee ||
+        !openshmem::cir::matchesTypedRMA(callee.value(), "get_nbi"))
       return failure();
 
     auto operands = op.getOperands();
@@ -292,7 +325,8 @@ public:
   LogicalResult matchAndRewrite(::cir::CallOp op,
                                 PatternRewriter &rewriter) const override {
     auto callee = op.getCallee();
-    if (!callee || callee.value() != "shmem_ctx_put")
+    if (!callee ||
+        !openshmem::cir::matchesTypedRMA(callee.value(), "put", "shmem_ctx_"))
       return failure();
 
     auto operands = op.getOperands();
@@ -322,7 +356,8 @@ public:
   LogicalResult matchAndRewrite(::cir::CallOp op,
                                 PatternRewriter &rewriter) const override {
     auto callee = op.getCallee();
-    if (!callee || callee.value() != "shmem_ctx_put_nbi")
+    if (!callee || !openshmem::cir::matchesTypedRMA(callee.value(), "put_nbi",
+                                                    "shmem_ctx_"))
       return failure();
 
     auto operands = op.getOperands();
@@ -352,7 +387,8 @@ public:
   LogicalResult matchAndRewrite(::cir::CallOp op,
                                 PatternRewriter &rewriter) const override {
     auto callee = op.getCallee();
-    if (!callee || callee.value() != "shmem_ctx_get")
+    if (!callee ||
+        !openshmem::cir::matchesTypedRMA(callee.value(), "get", "shmem_ctx_"))
       return failure();
 
     auto operands = op.getOperands();
@@ -382,7 +418,9 @@ public:
   LogicalResult matchAndRewrite(::cir::CallOp op,
                                 PatternRewriter &rewriter) const override {
     auto callee = op.getCallee();
-    if (!callee || callee.value() != "shmem_ctx_get_nbi")
+    if (!callee ||
+        !openshmem::cir::matchesTypedRMA(callee.value(), "get_nbi",
+                                         "shmem_ctx_"))
       return failure();
 
     auto operands = op.getOperands();
