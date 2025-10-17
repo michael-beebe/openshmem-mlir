@@ -140,7 +140,7 @@ LLC_BIN="${LLVM_BIN_DIR}/llc"
 
 CIR_TO_LLVM_TOOL="${CIR_TO_LLVM_TOOL:-}"
 if [[ -z "${CIR_TO_LLVM_TOOL}" ]]; then
-  if [[ -x "${SHMEM_MLIR_OPT}" ]]; then
+  if [[ -x "${SHMEM_MLIR_OPT}" ]] && "${SHMEM_MLIR_OPT}" --help 2>&1 | grep -q "cir-to-llvm"; then
     CIR_TO_LLVM_TOOL="${SHMEM_MLIR_OPT}"
   else
     CIR_TO_LLVM_TOOL="${TC_CIR_OPT}"
@@ -148,6 +148,10 @@ if [[ -z "${CIR_TO_LLVM_TOOL}" ]]; then
 fi
 CIR_TO_LLVM_PASSES="${CIR_TO_LLVM_PASSES:---cir-to-llvm}"
 EXTRA_STEP3_FLAGS="${EXTRA_STEP3_FLAGS:-}"
+
+if [[ "${CIR_TO_LLVM_TOOL}" == "${TC_CIR_OPT}" ]]; then
+  EXTRA_STEP3_FLAGS="--allow-unregistered-dialect ${EXTRA_STEP3_FLAGS}"
+fi
 
 # Clean tmp/ directory if requested
 if [[ ${DO_CLEAN} -eq 1 ]]; then
@@ -253,7 +257,10 @@ else
 fi
 
 BASENAME="$(basename "${INPUT_C}" .c)"
-OUTPUT_DIR="${ROOT_DIR}/tmp/${TEST_NAME}"
+DATE_STAMP="$(date +"%Y%m%d")"
+TIME_STAMP="$(date +"%H%M%S")"
+OUTPUT_DIR_NAME="${TEST_NAME}-${TOOLCHAIN}-${DATE_STAMP}-${TIME_STAMP}"
+OUTPUT_DIR="${ROOT_DIR}/tmp/${OUTPUT_DIR_NAME}"
 
 # Create output directory
 mkdir -p "${OUTPUT_DIR}"
