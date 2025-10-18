@@ -9,6 +9,7 @@ clangir-incubator
 clangir
 build-upstream
 build-incubator
+notes/.bk
 
 CMakeLists.txt.user
 CMakeCache.txt
