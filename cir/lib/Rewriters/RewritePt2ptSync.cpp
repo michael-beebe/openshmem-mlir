@@ -30,32 +30,32 @@ static MemRefType createSymmetricMemRefType(MLIRContext *ctx) {
 // Helper functions for type conversion
 static Value convertPtrToMemRef(OpBuilder &builder, Location loc, Value ptr) {
   auto memRefType = createSymmetricMemRefType(builder.getContext());
-  return builder.create<UnrealizedConversionCastOp>(loc, memRefType, ptr)
-      .getResult(0);
+  return builder.create<openshmem::WrapSymmetricPtrOp>(loc, memRefType, ptr)
+    .getResult();
 }
 
 static Value convertToIndex(OpBuilder &builder, Location loc, Value value) {
   return builder
-      .create<UnrealizedConversionCastOp>(loc, builder.getIndexType(), value)
-      .getResult(0);
+    .create<openshmem::WrapValueOp>(loc, builder.getIndexType(), value)
+    .getResult();
 }
 
 static Value convertToI32(OpBuilder &builder, Location loc, Value value) {
   return builder
-      .create<UnrealizedConversionCastOp>(loc, builder.getI32Type(), value)
-      .getResult(0);
+    .create<openshmem::WrapValueOp>(loc, builder.getI32Type(), value)
+    .getResult();
 }
 
 static Value convertToI64(OpBuilder &builder, Location loc, Value value) {
   return builder
-      .create<UnrealizedConversionCastOp>(loc, builder.getI64Type(), value)
-      .getResult(0);
+    .create<openshmem::WrapValueOp>(loc, builder.getI64Type(), value)
+    .getResult();
 }
 
 static Value convertToAnyType(OpBuilder &builder, Location loc, Value value,
                               Type targetType) {
-  return builder.create<UnrealizedConversionCastOp>(loc, targetType, value)
-      .getResult(0);
+  return builder.create<openshmem::WrapValueOp>(loc, targetType, value)
+    .getResult();
 }
 
 //===----------------------------------------------------------------------===//

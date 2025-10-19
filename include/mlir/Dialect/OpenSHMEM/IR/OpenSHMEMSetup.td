@@ -55,9 +55,7 @@ def OpenSHMEM_FinalizeOp : OpenSHMEM_Op<"finalize", []> {
 // RegionOp
 //===----------------------------------------------------------------------===//
 
-def OpenSHMEM_Region : OpenSHMEM_Op<"region", [
-  SingleBlockImplicitTerminator<"openshmem::YieldOp">
-]> {
+def OpenSHMEM_Region : OpenSHMEM_Op<"region", []> {
   let summary = "OpenSHMEM program region";
   let description = [{
     Defines a region containing OpenSHMEM operations. This operation implicitly
@@ -76,7 +74,7 @@ def OpenSHMEM_Region : OpenSHMEM_Op<"region", [
       %pe = openshmem.my_pe : i32
       %src = openshmem.malloc(%size) : index -> memref<i32, #openshmem.symmetric_memory>
       // ... more OpenSHMEM operations
-      // openshmem.yield is automatically inserted if not present
+  // The region must terminate with openshmem.yield
     }
     ```
   }];

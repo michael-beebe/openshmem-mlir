@@ -8,6 +8,7 @@
 
 #include "mlir/Conversion/OpenSHMEMToLLVM/OpenSHMEMToLLVM.h"
 #include "AtomicOpsToLLVM.h"
+#include "BridgeOpsToLLVM.h"
 #include "CollectiveOpsToLLVM.h"
 #include "ContextOpsToLLVM.h"
 #include "MemoryOpsToLLVM.h"
@@ -185,6 +186,9 @@ void openshmem::populateOpenSHMEMToLLVMConversionPatterns(
   // pointer-based approach
   patterns.add<MemRefAllocOpLowering>(converter);
   patterns.add<MemRefDeallocOpLowering>(converter);
+
+  // Bridge helper ops inserted during CIR conversion.
+  populateBridgeOpsToLLVMConversionPatterns(converter, patterns);
 
   // Populate OpenSHMEM-specific patterns
   populateSetupOpsToLLVMConversionPatterns(converter, patterns);

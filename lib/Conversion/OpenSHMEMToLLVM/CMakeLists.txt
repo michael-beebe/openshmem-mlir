@@ -1,6 +1,7 @@
 add_mlir_conversion_library(MLIROpenSHMEMToLLVM
   OpenSHMEMToLLVM.cpp
   OpenSHMEMConversionUtils.cpp
+  BridgeOpsToLLVM.cpp
   SetupOpsToLLVM.cpp
   MemoryOpsToLLVM.cpp
   RMAOpsToLLVM.cpp

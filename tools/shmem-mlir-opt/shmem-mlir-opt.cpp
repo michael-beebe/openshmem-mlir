@@ -19,7 +19,12 @@
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 
 struct CIRToLLVMPipelineOptions
-  : public mlir::PassPipelineOptions<CIRToLLVMPipelineOptions> {};
+    : public mlir::PassPipelineOptions<CIRToLLVMPipelineOptions> {
+  Option<bool> disableCCLowering{
+      *this, "disable-cc-lowering",
+      llvm::cl::desc("Skips calling convetion lowering pass."),
+      llvm::cl::init(false)};
+};
 #endif
 
 int main(int argc, char **argv) {
@@ -60,7 +65,8 @@ int main(int argc, char **argv) {
           "cir-to-llvm", "Convert CIR to LLVM dialect",
           [](mlir::OpPassManager &pm,
              const CIRToLLVMPipelineOptions &options) {
-            pm.addPass(cir::direct::createConvertCIRToLLVMPass());
+            cir::direct::populateCIRToLLVMPasses(pm,
+                                                  options.disableCCLowering);
           });
 
   // Reconcile unrealized casts helper pass can be useful after conversions.

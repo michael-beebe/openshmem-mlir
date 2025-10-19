@@ -35,26 +35,29 @@ static MemRefType createSymmetricMemRefType(MLIRContext *ctx) {
 // Helper functions for type conversion
 static Value convertPtrToMemRef(OpBuilder &builder, Location loc, Value ptr) {
   auto memRefType = createSymmetricMemRefType(builder.getContext());
-  return builder.create<UnrealizedConversionCastOp>(loc, memRefType, ptr)
-      .getResult(0);
+  return builder.create<openshmem::WrapSymmetricPtrOp>(loc, memRefType, ptr)
+      .getResult();
 }
 
 static Value convertToI32(OpBuilder &builder, Location loc, Value value) {
-  return builder
-      .create<UnrealizedConversionCastOp>(loc, builder.getI32Type(), value)
-      .getResult(0);
+  return builder.create<openshmem::WrapValueOp>(loc, builder.getI32Type(), value)
+      .getResult();
 }
 
 static Value convertToCtx(OpBuilder &builder, Location loc, Value val) {
   auto ctxType = openshmem::CtxType::get(builder.getContext());
-  return builder.create<UnrealizedConversionCastOp>(loc, ctxType, val)
-      .getResult(0);
+  return builder.create<openshmem::WrapCtxOp>(loc, ctxType, val).getResult();
 }
 
 static Value convertToAnyType(OpBuilder &builder, Location loc, Value value,
                               Type targetType) {
-  return builder.create<UnrealizedConversionCastOp>(loc, targetType, value)
-      .getResult(0);
+  return builder.create<openshmem::WrapValueOp>(loc, targetType, value)
+      .getResult();
+}
+
+// Temporary aliases until all call sites are updated to the bridge helpers.
+static Value wrapSymmetricPtr(OpBuilder &builder, Location loc, Value ptr) {
+  return convertPtrToMemRef(builder, loc, ptr);
 }
 
 //===----------------------------------------------------------------------===//
@@ -74,7 +77,7 @@ struct ConvertAtomicFetchPattern : public OpRewritePattern<::cir::CallOp> {
     if (operands.size() != 2)
       return failure();
 
-    auto source = convertPtrToMemRef(rewriter, op.getLoc(), operands[0]);
+  auto source = wrapSymmetricPtr(rewriter, op.getLoc(), operands[0]);
     auto pe = convertToI32(rewriter, op.getLoc(), operands[1]);
 
     auto newOp = rewriter.create<mlir::openshmem::AtomicFetchOp>(
@@ -102,7 +105,7 @@ struct ConvertAtomicSetPattern : public OpRewritePattern<::cir::CallOp> {
     if (operands.size() != 3)
       return failure();
 
-    auto dest = convertPtrToMemRef(rewriter, op.getLoc(), operands[0]);
+  auto dest = wrapSymmetricPtr(rewriter, op.getLoc(), operands[0]);
     auto value = convertToAnyType(rewriter, op.getLoc(), operands[1],
                                   rewriter.getI32Type());
     auto pe = convertToI32(rewriter, op.getLoc(), operands[2]);
@@ -128,7 +131,7 @@ struct ConvertAtomicCompareSwapPattern
     if (operands.size() != 4)
       return failure();
 
-    auto dest = convertPtrToMemRef(rewriter, op.getLoc(), operands[0]);
+  auto dest = wrapSymmetricPtr(rewriter, op.getLoc(), operands[0]);
     auto cond = convertToAnyType(rewriter, op.getLoc(), operands[1],
                                  rewriter.getI32Type());
     auto value = convertToAnyType(rewriter, op.getLoc(), operands[2],
@@ -160,7 +163,7 @@ struct ConvertAtomicSwapPattern : public OpRewritePattern<::cir::CallOp> {
     if (operands.size() != 3)
       return failure();
 
-    auto dest = convertPtrToMemRef(rewriter, op.getLoc(), operands[0]);
+  auto dest = wrapSymmetricPtr(rewriter, op.getLoc(), operands[0]);
     auto value = convertToAnyType(rewriter, op.getLoc(), operands[1],
                                   rewriter.getI32Type());
     auto pe = convertToI32(rewriter, op.getLoc(), operands[2]);
@@ -190,7 +193,7 @@ struct ConvertAtomicFetchIncPattern : public OpRewritePattern<::cir::CallOp> {
     if (operands.size() != 2)
       return failure();
 
-    auto dest = convertPtrToMemRef(rewriter, op.getLoc(), operands[0]);
+  auto dest = wrapSymmetricPtr(rewriter, op.getLoc(), operands[0]);
     auto pe = convertToI32(rewriter, op.getLoc(), operands[1]);
 
     auto newOp = rewriter.create<mlir::openshmem::AtomicFetchIncOp>(
@@ -218,7 +221,7 @@ struct ConvertAtomicIncPattern : public OpRewritePattern<::cir::CallOp> {
     if (operands.size() != 2)
       return failure();
 
-    auto dest = convertPtrToMemRef(rewriter, op.getLoc(), operands[0]);
+  auto dest = wrapSymmetricPtr(rewriter, op.getLoc(), operands[0]);
     auto pe = convertToI32(rewriter, op.getLoc(), operands[1]);
 
     rewriter.replaceOpWithNewOp<mlir::openshmem::AtomicIncOp>(op, dest, pe);

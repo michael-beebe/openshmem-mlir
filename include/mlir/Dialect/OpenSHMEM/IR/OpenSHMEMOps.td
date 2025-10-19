@@ -20,6 +20,7 @@ include "mlir/Dialect/OpenSHMEM/IR/OpenSHMEMContexts.td"
 include "mlir/Dialect/OpenSHMEM/IR/OpenSHMEMAtomics.td"
 include "mlir/Dialect/OpenSHMEM/IR/OpenSHMEMSync.td"
 include "mlir/Dialect/OpenSHMEM/IR/OpenSHMEMPt2ptSync.td"
+include "mlir/Dialect/OpenSHMEM/IR/OpenSHMEMBridge.td"
 
 // TODO: remaining v1.5 operations
 

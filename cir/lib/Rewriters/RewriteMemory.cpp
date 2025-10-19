@@ -44,11 +44,11 @@ struct ConvertShmemMallocPattern : public OpRewritePattern<::cir::CallOp> {
     Value sizeArg = callOp.getArgOperands()[0];
 
     // Convert size argument to index type using unrealized conversion cast
-    auto indexType = rewriter.getIndexType();
-    auto convertedSize = rewriter
-                             .create<UnrealizedConversionCastOp>(
-                                 callOp.getLoc(), indexType, sizeArg)
-                             .getResult(0);
+  auto indexType = rewriter.getIndexType();
+  auto convertedSize = rewriter
+               .create<openshmem::WrapValueOp>(
+                 callOp.getLoc(), indexType, sizeArg)
+               .getResult();
 
     // Create symmetric memory space attribute
     auto symmetricMemSpace =
@@ -65,10 +65,11 @@ struct ConvertShmemMallocPattern : public OpRewritePattern<::cir::CallOp> {
 
     // Cast the result back to a CIR pointer type to match the original return
     // type
-    auto resultCast = rewriter.create<UnrealizedConversionCastOp>(
-        callOp.getLoc(), callOp.getResultTypes(), mallocOp.getResult());
+  auto resultType = callOp.getResult().getType();
+  auto resultCast = rewriter.create<openshmem::WrapValueOp>(
+    callOp.getLoc(), resultType, mallocOp.getResult());
 
-    rewriter.replaceOp(callOp, resultCast.getResult(0));
+  rewriter.replaceOp(callOp, resultCast.getResult());
     return success();
   }
 };
@@ -99,10 +100,10 @@ struct ConvertShmemFreePattern : public OpRewritePattern<::cir::CallOp> {
                         MemRefLayoutAttrInterface{}, symmetricMemSpace);
 
     // Cast the CIR pointer to memref type for the free operation
-    auto convertedPtr = rewriter
-                            .create<UnrealizedConversionCastOp>(
-                                callOp.getLoc(), memRefType, ptrArg)
-                            .getResult(0);
+  auto convertedPtr = rewriter
+              .create<openshmem::WrapSymmetricPtrOp>(
+                callOp.getLoc(), memRefType, ptrArg)
+              .getResult();
 
     rewriter.replaceOpWithNewOp<openshmem::FreeOp>(callOp, convertedPtr);
     return success();

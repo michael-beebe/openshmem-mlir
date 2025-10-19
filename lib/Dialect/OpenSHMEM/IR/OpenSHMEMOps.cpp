@@ -22,12 +22,23 @@ using namespace mlir::openshmem;
 //===----------------------------------------------------------------------===//
 
 LogicalResult openshmem::Region::verify() {
-  // With SingleBlockImplicitTerminator, MLIR automatically ensures
-  // the region has the proper terminator, so we just need to verify
-  // the region is not empty
   if (getBody().empty()) {
     return emitOpError("region must contain at least one block");
   }
+
+  bool foundYield = false;
+  for (Block &block : getBody()) {
+    Operation *terminator = block.getTerminator();
+    if (auto yield = dyn_cast<openshmem::YieldOp>(terminator)) {
+      if (foundYield)
+        return emitOpError("region must contain exactly one openshmem.yield");
+      foundYield = true;
+      continue;
+    }
+  }
+
+  if (!foundYield)
+    return emitOpError("region must terminate with openshmem.yield");
 
   return success();
 }
