@@ -45,6 +45,43 @@ Type getElementTypeFromCIRPtr(Type cirPtrType) {
   return IntegerType::get(cirPtrType.getContext(), 8);
 }
 
+MemRefType createSymmetricMemRefType(MLIRContext *ctx, Type elementType) {
+  auto symmetricMemSpace = openshmem::SymmetricMemorySpaceAttr::get(ctx);
+  Type elem = elementType;
+  if (!elem)
+    elem = IntegerType::get(ctx, 8);
+  return MemRefType::get({ShapedType::kDynamic}, elem,
+                         MemRefLayoutAttrInterface{}, symmetricMemSpace);
+}
+
+Value wrapSymmetricPtr(OpBuilder &builder, Location loc, Value ptr) {
+  auto memRefType = createSymmetricMemRefType(builder.getContext(), nullptr);
+  return builder.create<openshmem::WrapSymmetricPtrOp>(loc, memRefType, ptr)
+      .getResult();
+}
+
+Value wrapValueToIndex(OpBuilder &builder, Location loc, Value value) {
+  return builder.create<openshmem::WrapValueOp>(loc, builder.getIndexType(),
+                                                value)
+      .getResult();
+}
+
+Value wrapValueToI32(OpBuilder &builder, Location loc, Value value) {
+  return builder.create<openshmem::WrapValueOp>(loc, builder.getI32Type(),
+                                                value)
+      .getResult();
+}
+
+Value wrapValueToCtx(OpBuilder &builder, Location loc, Value value) {
+  auto ctxType = openshmem::CtxType::get(builder.getContext());
+  return builder.create<openshmem::WrapCtxOp>(loc, ctxType, value).getResult();
+}
+
+Value wrapValueToType(OpBuilder &builder, Location loc, Value value, Type targetType) {
+  return builder.create<openshmem::WrapValueOp>(loc, targetType, value)
+      .getResult();
+}
+
 } // namespace cir
 } // namespace openshmem
 } // namespace mlir

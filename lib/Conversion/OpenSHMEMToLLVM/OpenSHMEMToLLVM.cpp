@@ -35,6 +35,7 @@
 #include "mlir/Support/LLVM.h"
 #include "mlir/Target/LLVMIR/TypeToLLVM.h"
 #include "mlir/Transforms/DialectConversion.h"
+#include "mlir/Transforms/GreedyPatternRewriteDriver.h"
 #include "llvm/ADT/TypeSwitch.h"
 #include "llvm/Support/Casting.h"
 #include <memory>
@@ -73,6 +74,32 @@ struct ConvertOpenSHMEMToLLVMPass : public OperationPass<ModuleOp> {
   }
 
   void runOnOperation() override {
+    // Simple pre-lowering: replace any remaining openshmem.wrap_value ops
+    // with an UnrealizedConversionCastOp so they don't block the subsequent
+    // dialect conversion. We do this with a safe two-phase walk/replace to
+    // avoid invalidating the walker while mutating the IR.
+    {
+      SmallVector<openshmem::WrapValueOp, 8> wraps;
+      getOperation().walk([&](openshmem::WrapValueOp op) { wraps.push_back(op); });
+      for (auto op : wraps) {
+        // Only pre-lower wrap_value ops that deal with integer/index types.
+        // Avoid touching memref/pointer variants which are handled by the
+        // BridgeOpsToLLVM patterns and whose premature replacement can
+        // confuse memref materialization.
+        Type resTy = op.getResult().getType();
+        Type valTy = op.getValue().getType();
+        if (!(resTy.isIntOrIndex() || valTy.isIntOrIndex()))
+          continue;
+
+        OpBuilder b(op);
+        auto cast = b.create<UnrealizedConversionCastOp>(op.getLoc(),
+                                                        TypeRange(op.getResult().getType()),
+                                                        ValueRange(op.getValue()));
+        op.replaceAllUsesWith(cast.getResult(0));
+        op.erase();
+      }
+    }
+
     ConversionTarget target(getContext());
     RewritePatternSet patterns(&getContext());
     LLVMTypeConverter converter(&getContext());

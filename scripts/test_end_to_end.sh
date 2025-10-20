@@ -152,8 +152,11 @@ MLIR_TRANSLATE_BIN="${LLVM_BIN_DIR}/mlir-translate"
 LLC_BIN="${LLVM_BIN_DIR}/llc"
 
 CIR_TO_LLVM_TOOL="${CIR_TO_LLVM_TOOL:-}"
+# Prefer the project-local shmem-mlir-opt if present. It registers the
+# OpenSHMEM dialect and the 'cir-to-llvm' pipeline used in this repo. Fall
+# back to the toolchain's cir-opt when shmem-mlir-opt is not present.
 if [[ -z "${CIR_TO_LLVM_TOOL}" ]]; then
-  if [[ -x "${SHMEM_MLIR_OPT}" ]] && "${SHMEM_MLIR_OPT}" --help 2>&1 | grep -q "cir-to-llvm"; then
+  if [[ -x "${SHMEM_MLIR_OPT}" ]]; then
     CIR_TO_LLVM_TOOL="${SHMEM_MLIR_OPT}"
   else
     CIR_TO_LLVM_TOOL="${TC_CIR_OPT}"

@@ -44,3 +44,26 @@
 ### Follow-up Work
 
 - Teach the conversion pipeline to drop the remaining `!cir.*` artifacts (starting with `openshmem.wrap_value`) before the OpenSHMEM→LLVM stage runs.
+
+## 2025-10-19 (evening)
+
+### Recent Actions
+
+- Implemented CIR→OpenSHMEM RMA rewriters and centralized helper utilities so typed and generic shmem_put/get variants lower into `openshmem.*` ops.
+- Added multiple bridge-op lowering strategies in `lib/Conversion/OpenSHMEMToLLVM/BridgeOpsToLLVM.cpp`: materialization to `UnrealizedConversionCastOp`, targeted ConvertOpToLLVMPatterns for pointer/memref cases, and a conservative fallback rewrite to remove remaining `openshmem.wrap_value` ops.
+- Tried a few pre-lowering approaches in `ConvertOpenSHMEMToLLVMPass` (greedy pattern application and a safe two-phase walk/replace). Iterated on these to avoid triggering memref materialization crashes.
+
+### Current Result
+
+- Build/iteration: `shmem-mlir-opt` rebuilt successfully with the changes.
+- End-to-end harness still fails at Step 4 (OpenSHMEM→LLVM): a `wrap_value` op remains that carries a memref operand and produces a CIR pointer type and is not being legalized by the current set of patterns. Example failing op seen in `3.2d_stencil.partial-llvm.mlir`:
+	- `%27 = openshmem.wrap_value %26 : memref<?xi8, #openshmem.symmetric_memory> -> !cir.ptr<!void>`
+
+### Next Steps
+
+- Add a narrowly scoped pre-lowering or pattern that handles the remaining memref->cir.ptr `wrap_value` variant (or instrument pattern matching to discover why the conversion pattern is not firing for this case).
+- If this is a systemic mismatch (CIR types leaking into OpenSHMEM lowering), consider opening a brief design issue to determine whether CIR types should be removed earlier in the pipeline or if the OpenSHMEM->LLVM conversion should accept and materialize these bridges.
+
+### Note
+
+- I avoided broad pre-lowering that previously caused crashes by restricting replacements to specific type shapes; the remaining failing pattern appears to need a narrowly targeted fix.

@@ -31,6 +31,20 @@ Type convertCIRPtrToOpenSHMEMMemRef(Type cirPtrType, MLIRContext *context);
 /// Extract element type from a CIR pointer type.
 Type getElementTypeFromCIRPtr(Type cirPtrType);
 
+/// Create a symmetric-memory MemRefType with a dynamic shape and the
+/// canonical element type (i8) or a provided element type.
+MemRefType createSymmetricMemRefType(MLIRContext *ctx, Type elementType = nullptr);
+
+/// Wrap a CIR pointer value into an OpenSHMEM memref via the bridge op.
+Value wrapSymmetricPtr(OpBuilder &builder, Location loc, Value ptr);
+
+/// Wrap a value into index/i32/ctx or an arbitrary target type via
+/// openshmem.wrap_value / openshmem.wrap_ctx bridge ops.
+Value wrapValueToIndex(OpBuilder &builder, Location loc, Value value);
+Value wrapValueToI32(OpBuilder &builder, Location loc, Value value);
+Value wrapValueToCtx(OpBuilder &builder, Location loc, Value value);
+Value wrapValueToType(OpBuilder &builder, Location loc, Value value, Type targetType);
+
 } // namespace cir
 } // namespace openshmem
 } // namespace mlir
