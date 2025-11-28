@@ -14,6 +14,7 @@ module {
       openshmem.atomic_add(%ptr, %value, %pe) : memref<i32, #openshmem.symmetric_memory>, i32, i32
       
       openshmem.free(%ptr) : memref<i32, #openshmem.symmetric_memory>
+      openshmem.yield
     }
     return
   }
@@ -29,6 +30,7 @@ module {
       %old_val = openshmem.atomic_fetch_add(%ptr, %value, %pe) : memref<i32, #openshmem.symmetric_memory>, i32, i32 -> i32
       
       openshmem.free(%ptr) : memref<i32, #openshmem.symmetric_memory>
+      openshmem.yield
     }
     return
   }
@@ -43,6 +45,7 @@ module {
       %val = openshmem.atomic_fetch(%ptr, %pe) : memref<i32, #openshmem.symmetric_memory>, i32 -> i32
       
       openshmem.free(%ptr) : memref<i32, #openshmem.symmetric_memory>
+      openshmem.yield
     }
     return
   }
@@ -58,6 +61,7 @@ module {
       openshmem.atomic_set(%ptr, %value, %pe) : memref<i32, #openshmem.symmetric_memory>, i32, i32
       
       openshmem.free(%ptr) : memref<i32, #openshmem.symmetric_memory>
+      openshmem.yield
     }
     return
   }

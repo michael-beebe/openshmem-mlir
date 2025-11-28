@@ -14,6 +14,7 @@ module {
       
       // CHECK: call @shmem_free(%{{.*}}) : (!llvm.ptr) -> ()
       openshmem.free(%ptr) : memref<i32, #openshmem.symmetric_memory>
+      openshmem.yield
     }
     return
   }
@@ -30,6 +31,7 @@ module {
       // Free in reverse order
       openshmem.free(%ptr2) : memref<i64, #openshmem.symmetric_memory>
       openshmem.free(%ptr1) : memref<i32, #openshmem.symmetric_memory>
+      openshmem.yield
     }
     return
   }

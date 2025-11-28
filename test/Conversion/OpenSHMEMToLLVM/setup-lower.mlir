@@ -12,6 +12,7 @@ module {
       
       // CHECK: call @shmem_finalize()
       openshmem.finalize
+      openshmem.yield
     }
     return
   }
@@ -24,6 +25,7 @@ module {
       
       // CHECK: call @shmem_n_pes() : () -> i32
       %n_pes = openshmem.n_pes : i32
+      openshmem.yield
     }
     return
   }

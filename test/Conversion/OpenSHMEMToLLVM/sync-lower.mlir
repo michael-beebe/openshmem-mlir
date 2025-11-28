@@ -8,6 +8,7 @@ module {
     openshmem.region {
       // CHECK: call @shmem_barrier_all()
       openshmem.barrier_all
+      openshmem.yield
     }
     return
   }
@@ -17,6 +18,7 @@ module {
     openshmem.region {
       // CHECK: call @shmem_barrier(%{{.*}}, %{{.*}}, %{{.*}}, %{{.*}})
       openshmem.barrier(%pe_start, %log_pe_stride, %pe_size, %p_sync) : i32, i32, i32, memref<?xi64, #openshmem.symmetric_memory>
+      openshmem.yield
     }
     return
   }
@@ -26,6 +28,7 @@ module {
     openshmem.region {
       // CHECK: call @shmem_quiet()
       openshmem.quiet
+      openshmem.yield
     }
     return
   }
@@ -36,6 +39,7 @@ module {
       // Typical synchronization pattern
       openshmem.barrier_all
       openshmem.quiet
+      openshmem.yield
     }
     return
   }

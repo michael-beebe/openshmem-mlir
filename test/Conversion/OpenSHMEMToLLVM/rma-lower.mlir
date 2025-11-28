@@ -12,6 +12,7 @@ module {
       openshmem.putmem(%symmetric_ptr, %arg0, %size, %pe) : memref<i32, #openshmem.symmetric_memory>, memref<10xi32>, index, i32
       
       openshmem.free(%symmetric_ptr) : memref<i32, #openshmem.symmetric_memory>
+      openshmem.yield
     }
     return
   }
@@ -25,6 +26,7 @@ module {
       openshmem.getmem(%arg0, %symmetric_ptr, %size, %pe) : memref<10xi32>, memref<i32, #openshmem.symmetric_memory>, index, i32
       
       openshmem.free(%symmetric_ptr) : memref<i32, #openshmem.symmetric_memory>
+      openshmem.yield
     }
     return
   }
@@ -41,6 +43,7 @@ module {
       openshmem.getmem(%local, %remote, %size, %pe) : memref<16xi32>, memref<i32, #openshmem.symmetric_memory>, index, i32
       
       openshmem.free(%remote) : memref<i32, #openshmem.symmetric_memory>
+      openshmem.yield
     }
     return
   }

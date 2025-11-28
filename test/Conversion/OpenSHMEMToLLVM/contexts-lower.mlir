@@ -47,6 +47,7 @@ module {
       %size = arith.constant 64 : index
       %ptr = openshmem.malloc(%size) : index -> memref<i32, #openshmem.symmetric_memory>
       openshmem.free(%ptr) : memref<i32, #openshmem.symmetric_memory>
+      openshmem.yield
     }
     
     openshmem.ctx_destroy(%ctx) : !openshmem.ctx

@@ -17,6 +17,7 @@ module {
       
       openshmem.free(%src) : memref<i32, #openshmem.symmetric_memory>
       openshmem.free(%dest) : memref<i32, #openshmem.symmetric_memory>
+      openshmem.yield
     }
     return
   }
@@ -34,6 +35,7 @@ module {
       
       openshmem.free(%src) : memref<i32, #openshmem.symmetric_memory>
       openshmem.free(%dest) : memref<i32, #openshmem.symmetric_memory>
+      openshmem.yield
     }
     return
   }
@@ -51,6 +53,7 @@ module {
       
       openshmem.free(%src) : memref<i32, #openshmem.symmetric_memory>
       openshmem.free(%dest) : memref<i32, #openshmem.symmetric_memory>
+      openshmem.yield
     }
     return
   }
