@@ -7,6 +7,8 @@ find_package(MLIR REQUIRED CONFIG)
 set(Clang_DIR "${MLIR_CMAKE_DIR}/../clang")
 find_package(Clang REQUIRED CONFIG)
 
+option(OPENSHMEM_ENABLE_CIR "Build the ClangIR-based frontend in cir/" ON)
+
 list(APPEND CMAKE_MODULE_PATH "${MLIR_CMAKE_DIR}")
 include(TableGen)
 include(AddLLVM)
@@ -31,13 +33,16 @@ include_directories(
   "${CMAKE_BINARY_DIR}/include"
 )
 
-# Check if ClangIR (CIR) is available by looking for the clangCIR target
-if (TARGET clangCIR)
+# Check if ClangIR (CIR) is available by looking for the clangCIR target.
+if (OPENSHMEM_ENABLE_CIR AND TARGET clangCIR)
   set(HAVE_CLANGIR ON)
   message(STATUS "ClangIR detected - enabling CIR support")
-else()
+elseif(OPENSHMEM_ENABLE_CIR)
   set(HAVE_CLANGIR OFF)
   message(STATUS "ClangIR not detected - CIR support disabled")
+else()
+  set(HAVE_CLANGIR OFF)
+  message(STATUS "ClangIR support explicitly disabled")
 endif()
 
 # If ClangIR is available, add CIR include paths
@@ -97,3 +102,7 @@ endif()
 
 add_subdirectory(tools)
 
+# Optional Python bindings for the OpenSHMEM dialect
+if (MLIR_ENABLE_BINDINGS_PYTHON)
+  add_subdirectory(python)
+endif()

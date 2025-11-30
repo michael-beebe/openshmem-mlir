@@ -15,6 +15,8 @@ Options:
   -b, --build-dir <dir>  Build directory (default: build-<toolchain>)
   -j, --jobs <N>         Parallel build jobs (default: nproc/2)
   -G, --generator <gen>  CMake generator (default: Ninja)
+  --enable-cir           Force-enable ClangIR frontend (default: on if present)
+  --disable-cir          Disable ClangIR frontend even if available
   -h, --help             Show this help message
 
 Environment overrides:
@@ -27,6 +29,7 @@ TOOLCHAIN="incubator"
 CLI_BUILD_DIR=""
 CLI_JOBS=""
 CLI_GENERATOR=""
+ENABLE_CIR=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -62,6 +65,14 @@ while [[ $# -gt 0 ]]; do
       CLI_GENERATOR="$2"
       shift 2
       ;;
+    --enable-cir)
+      ENABLE_CIR="ON"
+      shift 1
+      ;;
+    --disable-cir)
+      ENABLE_CIR="OFF"
+      shift 1
+      ;;
     -h|--help)
       print_usage
       exit 0
@@ -93,6 +104,11 @@ MLIR_DIR="${ENV_MLIR_DIR:-${TC_MLIR_DIR}}"
 
 ENV_LLVM_DIR="${LLVM_DIR:-}"
 LLVM_DIR="${ENV_LLVM_DIR:-${TC_LLVM_DIR}}"
+
+# Default: enable CIR unless explicitly disabled. Allow env override.
+if [[ -z "${ENABLE_CIR}" ]]; then
+  ENABLE_CIR="${ENABLE_CIR:-${OPENSHMEM_ENABLE_CIR:-ON}}"
+fi
 
 if [[ "${GENERATOR}" == "Ninja" ]] && ! command -v ninja >/dev/null 2>&1; then
   echo "ERROR: Ninja is not installed. Install ninja-build or choose another generator." >&2
@@ -131,6 +147,7 @@ cmake_arguments=(
   -DCMAKE_BUILD_TYPE="${CMAKE_BUILD_TYPE}"
   -DMLIR_DIR="${MLIR_DIR}"
   -DLLVM_DIR="${LLVM_DIR}"
+  -DOPENSHMEM_ENABLE_CIR="${ENABLE_CIR}"
 )
 
 if [[ -n "${TC_LLVM_PROJECT_SOURCE_DIR}" ]]; then
