@@ -1,0 +1,295 @@
+\documentclass[11pt]{article}
+
+\usepackage{geometry}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{titlesec}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{setspace}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+
+\geometry{margin=1in}
+\setstretch{1.15}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  columns=flexible,
+  breaklines=true
+}
+
+\title{Design Document: A Python \texttt{shmem4py} Frontend Targeting an MLIR OpenSHMEM Dialect}
+\author{Michael Beebe}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\section{Overview}
+
+This document outlines the design of a compiler frontend that translates existing
+\texttt{shmem4py} programs into an MLIR-based OpenSHMEM dialect.  
+The goal is to enable whole-program OpenSHMEM optimizations such as message aggregation,
+asynchronous communication conversion, collective fusion, and future GPU/NVSHMEM support.
+
+The major components of the system are:
+
+\begin{itemize}
+    \item A C++/ODS OpenSHMEM dialect (already implemented).
+    \item Python bindings for that dialect, enabling construction of IR from Python.
+    \item A Python frontend that parses or traces \texttt{shmem4py} code and produces structured MLIR containing \texttt{scf}, \texttt{memref}, \texttt{arith}, and the OpenSHMEM dialect.
+    \item Optimization and lowering pipelines implemented in MLIR.
+    \item Backends targeting C/OpenSHMEM or LLVM (and later NVSHMEM).
+\end{itemize}
+
+\section{Goals and Non-Goals}
+
+\subsection{Goals}
+
+\begin{itemize}
+    \item Allow the user to write \emph{unmodified} \texttt{shmem4py} code.
+    \item Emit MLIR with structured control flow, explicit memory semantics, and explicit communication operations.
+    \item Preserve enough semantic information to safely perform communication optimizations.
+    \item Support both offline compilation and optional JIT-style usage.
+    \item Build a foundation for GPU/NVSHMEM extensions.
+\end{itemize}
+
+\subsection{Non-Goals}
+
+\begin{itemize}
+    \item Supporting full dynamic Python semantics (reflection, generators, meta-classes).
+    \item Supporting advanced NumPy features (broadcasting, fancy indexing, views).
+    \item Compiling arbitrary Python programs.
+    \item Supporting all of \texttt{shmem4py} initially.
+\end{itemize}
+
+\section{High-Level Architecture}
+
+The architecture consists of the following layers:
+
+\begin{enumerate}
+    \item \textbf{OpenSHMEM Dialect (C++/ODS):} Defines operations, types, attributes, and passes.
+    \item \textbf{Python Bindings:} The dialect must be exposed to MLIR's Python bindings so Python code can construct IR.
+    \item \textbf{\texttt{shmem4py} Frontend:} A Python library that extracts IR from Python functions via AST or tracing.
+    \item \textbf{Driver Infrastructure:} CLI tool and optional decorators for JIT.
+    \item \textbf{Backend:} C/OpenSHMEM stub lowering or LLVM lowering; future NVSHMEM lowering.
+\end{enumerate}
+
+\section{IR Requirements}
+
+Optimizations such as message aggregation and async conversion require IR expressing:
+
+\begin{itemize}
+    \item Explicit loops (\texttt{scf.for}).
+    \item Explicit memory operations (\texttt{memref.load/store}, \texttt{memref.subview}).
+    \item Arithmetic and index manipulation (\texttt{arith}).
+    \item OpenSHMEM communication (\texttt{openshmem.put}, \texttt{openshmem.get}, \texttt{openshmem.barrier\_all}, etc.).
+\end{itemize}
+
+Below is an illustrative example of the kind of MLIR the frontend should produce.
+This IR corresponds to a nearest-neighbor halo exchange written in \texttt{shmem4py}.
+
+\begin{lstlisting}
+func.func @halo_step(%u: memref<?xf64, #openshmem.sym>,
+                     %niters: index) {
+  %me   = openshmem.my_pe    : index
+  %npes = openshmem.n_pes    : index
+  %n    = memref.dim %u, %c0 : memref<?xf64, #openshmem.sym>
+
+  scf.for %it = %c0 to %niters step %c1 {
+    scf.for %i = %c1 to %n_minus_1 step %c1 {
+      ... interior computation ...
+    }
+
+    openshmem.barrier_all
+
+    %left_src = memref.subview %u[...] : memref<1xf64, #openshmem.sym>
+    openshmem.put %left_src, %left, %dest_off_left
+
+    %right_src = memref.subview %u[...] : memref<1xf64, #openshmem.sym>
+    openshmem.put %right_src, %right, %c0
+
+    openshmem.barrier_all
+  }
+
+  return
+}
+\end{lstlisting}
+
+This form exposes PE relationships, ranges, and synchronization structure.
+
+\section{Python Bindings for the Dialect}
+
+\subsection{Requirements}
+
+\begin{itemize}
+    \item Dialect ops must be defined in ODS so bindings can be auto-generated.
+    \item The dialect must register itself with MLIR's Python extension module.
+    \item The build must enable \texttt{MLIR\_ENABLE\_BINDINGS\_PYTHON=ON}.
+\end{itemize}
+
+\subsection{Result}
+
+Once bindings are generated, Python code can construct OpenSHMEM ops:
+
+\begin{lstlisting}[language=python]
+from mlir.ir import *
+from mlir.dialects import openshmem, scf, arith, memref
+
+with Context() as ctx:
+    module = Module.create()
+    with InsertionPoint(module.body):
+        pe = openshmem.MyPeOp()
+\end{lstlisting}
+
+\section{Frontend Design}
+
+\subsection{Package Layout}
+
+\begin{itemize}
+    \item \texttt{python/shmem4py\_mlir/frontend.py} — AST visitor / tracer.
+    \item \texttt{python/shmem4py\_mlir/builder.py} — IR construction helpers.
+    \item \texttt{python/shmem4py\_mlir/passes.py} — convenience wrappers for your optimization pipeline.
+    \item \texttt{python/shmem4py\_mlir/jit.py} — optional decorator-based JIT usage.
+    \item \texttt{python/shmem4py\_mlir/cli.py} — command-line interface.
+\end{itemize}
+
+\subsection{Supported Subset of \texttt{shmem4py}}
+
+\begin{itemize}
+    \item \textbf{Control Flow:} \texttt{for i in range(...)}, \texttt{if / elif / else}.
+    \item \textbf{Data:} 1D or 2D NumPy arrays mapped to \texttt{memref}.
+    \item \textbf{OpenSHMEM Ops:}
+        \begin{itemize}
+            \item \texttt{shmem.my\_pe()}, \texttt{shmem.n\_pes()}
+            \item \texttt{shmem.barrier\_all()}
+            \item \texttt{shmem.put(buf, pe, idx)}
+            \item \texttt{shmem.get(buf, pe, idx)}
+        \end{itemize}
+\end{itemize}
+
+\subsection{AST to MLIR Mapping}
+
+Using Python's \texttt{inspect} and \texttt{ast} modules:
+
+\begin{itemize}
+    \item \texttt{ast.FunctionDef} $\rightarrow$ \texttt{func.func}.
+    \item \texttt{ast.For} with \texttt{range()} $\rightarrow$ \texttt{scf.for}.
+    \item \texttt{ast.If} $\rightarrow$ \texttt{scf.if}.
+    \item \texttt{ast.Assign}, \texttt{ast.AugAssign} $\rightarrow$ \texttt{memref.load/store} $+$ \texttt{arith}.
+    \item \texttt{ast.Subscript} (e.g., \texttt{u[i]}, \texttt{u[a:b]}) $\rightarrow$
+    index calculations and/or \texttt{memref.subview}.
+    \item \texttt{ast.Call} into \texttt{shmem} module $\rightarrow$ OpenSHMEM dialect ops.
+\end{itemize}
+
+\section{Integration with \texttt{shmem4py}}
+
+\subsection{Offline Compilation}
+
+CLI usage:
+
+\begin{lstlisting}[language=bash]
+shmem4py-mlir myprog.py --fn halo_step --emit-mlir=ir.mlir --emit-exe=a.out
+\end{lstlisting}
+
+Pipeline:
+
+\begin{enumerate}
+    \item Import module and locate the function.
+    \item AST $\rightarrow$ MLIR.
+    \item Run OpenSHMEM optimization passes.
+    \item Lower to LLVM or C/OpenSHMEM.
+    \item Produce executable.
+\end{enumerate}
+
+\subsection{Optional JIT Mode}
+
+\begin{lstlisting}[language=python]
+from shmem4py_mlir import shmem_jit
+
+@shmem_jit
+def halo_step(u, niters):
+    ...
+\end{lstlisting}
+
+The decorator:
+
+\begin{enumerate}
+    \item Extracts and lowers the function to MLIR.
+    \item Runs pass pipeline.
+    \item JIT-compiles via LLVM backend.
+\end{enumerate}
+
+\section{Backend Strategy}
+
+\subsection{CPU OpenSHMEM}
+
+Two lowering strategies are possible:
+
+\begin{itemize}
+    \item \textbf{C/OpenSHMEM Stub Emission:} Lower to C code calling
+    \texttt{shmem\_*} routines.
+    \item \textbf{LLVM Lowering:} Implement LLVM dialect conversions so
+    \texttt{openshmem.*} ops lower to function calls into the OpenSHMEM C API.
+\end{itemize}
+
+\subsection{Future NVSHMEM/GPU Support}
+
+Future phases will:
+
+\begin{itemize}
+    \item Extend the dialect with GPU/NVSHMEM types, attributes, and ops.
+    \item Recognize NVSHMEM4Py imports.
+    \item Lower device-side regions to MLIR's GPU dialect or Triton.
+    \item Lower communication ops to NVSHMEM device and host APIs.
+\end{itemize}
+
+\section{Roadmap}
+
+\subsection{Phase 0: Preparatory Work}
+
+\begin{itemize}
+    \item Ensure dialect is cleanly ODS-based.
+    \item Add analysis attributes/types as needed.
+\end{itemize}
+
+\subsection{Phase 1: Python Bindings}
+
+\begin{itemize}
+    \item Add Python bindings generation to build.
+    \item Verify \texttt{import mlir.dialects.openshmem} works.
+\end{itemize}
+
+\subsection{Phase 2: Minimal Frontend}
+
+\begin{itemize}
+    \item Implement AST visitor for loops, arithmetic, subscript, and communication.
+    \item Support a minimal \texttt{shmem4py} subset.
+    \item CLI that emits MLIR for simple examples.
+\end{itemize}
+
+\subsection{Phase 3: Optimization + Backend}
+
+\begin{itemize}
+    \item Run OpenSHMEM optimization passes.
+    \item Lower to C/OpenSHMEM or LLVM + runtime calls.
+    \item Validate on microbenchmarks (halo, 2D stencil, ping-pong, etc.).
+\end{itemize}
+
+\subsection{Phase 4: Extensions and NVSHMEM}
+
+\begin{itemize}
+    \item Add more \texttt{shmem4py} operations.
+    \item Add JIT mode.
+    \item Begin GPU-side NVSHMEM dialect and lowering.
+\end{itemize}
+
+\section{Conclusion}
+
+This design leverages your existing C++ MLIR dialect, introduces Python bindings, and
+builds a practical frontend for \texttt{shmem4py} programs.  
+It provides a clean path toward structured IR suitable for communication optimizations while offering a user-friendly Python interface and long-term extensibility to NVSHMEM.
+
+\end{document}

@@ -23,3 +23,12 @@ CTestTestfile.cmake
 _deps
 CMakeUserPresets.json
 notes/.bk/
+*.aux
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.toc
+*.synctex.gz
+*.nav
+

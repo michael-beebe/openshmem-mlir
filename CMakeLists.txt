@@ -8,6 +8,7 @@ set(Clang_DIR "${MLIR_CMAKE_DIR}/../clang")
 find_package(Clang REQUIRED CONFIG)
 
 option(OPENSHMEM_ENABLE_CIR "Build the ClangIR-based frontend in cir/" ON)
+option(OPENSHMEM_ENABLE_PYTHON_BINDINGS "Build Python bindings for the OpenSHMEM dialect" ${MLIR_ENABLE_BINDINGS_PYTHON})
 
 list(APPEND CMAKE_MODULE_PATH "${MLIR_CMAKE_DIR}")
 include(TableGen)
@@ -103,6 +104,6 @@ endif()
 add_subdirectory(tools)
 
 # Optional Python bindings for the OpenSHMEM dialect
-if (MLIR_ENABLE_BINDINGS_PYTHON)
+if (OPENSHMEM_ENABLE_PYTHON_BINDINGS)
   add_subdirectory(python)
 endif()
