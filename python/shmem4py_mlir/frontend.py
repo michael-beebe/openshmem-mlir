@@ -11,6 +11,7 @@ Supports:
 import ast
 import inspect
 from typing import Callable, Optional, Dict, Any, Union
+from .mlir_gen import MLIRGenerator
 
 
 class Shmem4PyFrontend:
@@ -76,7 +77,10 @@ class Shmem4PyFrontend:
         #    - Convert other shmem.* calls to appropriate ops
         # 5. Serialize to MLIR text format
         
-        # For now, provide a template showing what needs to be implemented
+        # Generate MLIR from recognized shmem calls
+        generator = MLIRGenerator(module_name='shmem_program')
+        mlir_str = generator.generate_from_calls(visitor.shmem_calls)
+        
         init_calls = [c for c in visitor.shmem_calls if c['name'] == 'init']
         finalize_calls = [c for c in visitor.shmem_calls if c['name'] == 'finalize']
         other_calls = [c for c in visitor.shmem_calls 
@@ -89,12 +93,8 @@ class Shmem4PyFrontend:
         if other_calls:
             print(f"[DEBUG] Found {len(other_calls)} other shmem call(s)")
         
-        raise NotImplementedError(
-            "shmem4py frontend is under development. "
-            "Currently supports AST parsing and shmem call recognition, "
-            "but MLIR generation requires MLIR Python bindings. "
-            "Build with MLIR_ENABLE_BINDINGS_PYTHON=ON"
-        )
+        print(f"[DEBUG] Generated OpenSHMEM MLIR IR ({len(mlir_str)} bytes)")
+        return mlir_str
     
     def compile_to_file(self, func: Callable, output_path: str) -> None:
         """
@@ -118,6 +118,15 @@ class ASTVisitor(ast.NodeVisitor):
         self.conditionals = []
         self.shmem_calls = []  # Track shmem function calls with line numbers
         self.array_accesses = []
+        self.shmem_module_names = set()  # Track all names bound to shmem4py (shmem, shmem4py, etc)
+    
+    def visit_Import(self, node: ast.Import) -> None:
+        """Track imports of shmem4py module."""
+        for alias in node.names:
+            if alias.name == 'shmem4py':
+                # import shmem4py or import shmem4py as shmem
+                self.shmem_module_names.add(alias.asname or alias.name)
+        self.generic_visit(node)
     
     def visit_For(self, node: ast.For) -> None:
         """Process for loop nodes."""
@@ -146,6 +155,7 @@ class ASTVisitor(ast.NodeVisitor):
         
         # Record known shmem operations (match actual shmem4py API)
         # shmem4py uses: shmem.init(), shmem.finalize(), shmem.my_pe(), etc.
+        # Supports: import shmem4py as shmem; shmem.init()
         if func_name in {
             'init',
             'finalize',
@@ -155,9 +165,11 @@ class ASTVisitor(ast.NodeVisitor):
             'put',
             'get',
         }:
-            self.shmem_calls.append({
-                'name': func_name,
-                'module': module_name,  # 'shmem' for shmem.init(), None for import *
+            # Verify the call is on a shmem4py module (either direct import or aliased)
+            if module_name is None or module_name in self.shmem_module_names:
+                self.shmem_calls.append({
+                    'name': func_name,
+                    'module': module_name,  # Module name or None for direct imports
                 'line': node.lineno,
                 'col': node.col_offset,
                 'args': node.args,
