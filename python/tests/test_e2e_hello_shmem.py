@@ -55,20 +55,19 @@ def test_recognize_shmem_calls_in_hello():
 
 
 def test_frontend_compile_hello():
-    """Test that frontend.compile() processes hello_shmem."""
+    """Test that frontend.compile() generates MLIR for hello_shmem."""
     sys.path.insert(0, '/home/mbeebe/lanl/llvm/openshmem-mlir')
     from python.shmem4py_mlir.frontend import Shmem4PyFrontend
     
     frontend = Shmem4PyFrontend()
     
-    try:
-        frontend.compile(HELLO_SHMEM)
-        assert False, "Should raise NotImplementedError (MLIR bindings not available)"
-    except NotImplementedError as e:
-        # Expected - MLIR bindings not yet enabled
-        assert "MLIR_ENABLE_BINDINGS_PYTHON" in str(e)
-        print(f"✓ Frontend attempted MLIR generation (expected to fail):")
-        print(f"  {e}")
+    # Should successfully generate MLIR IR
+    mlir_ir = frontend.compile(HELLO_SHMEM)
+    assert mlir_ir is not None
+    assert 'openshmem.init' in mlir_ir
+    assert 'openshmem.finalize' in mlir_ir
+    assert 'openshmem.my_pe' in mlir_ir
+    print(f"✓ Frontend generated {len(mlir_ir)} bytes of OpenSHMEM MLIR IR")
 
 
 def test_print_hello_shmem_program():
