@@ -1,0 +1,14 @@
+# Python dependencies for OpenSHMEM MLIR dialect bindings and frontends
+
+# Core dependencies for MLIR Python bindings and shmem4py frontend
+# (MLIR Python bindings are built with the project if MLIR_ENABLE_BINDINGS_PYTHON=ON)
+numpy>=1.20.0              # For array handling in shmem4py frontend
+shmem4py>=0.2.0            # shmem4py DSL and runtime (once available on PyPI)
+
+# Optional: JIT and compilation support
+# numba>=0.55.0            # For potential JIT compilation (future)
+# cffi>=1.15.0             # For calling compiled libraries
+
+# Development and testing
+pytest>=7.0.0              # For unit tests
+pytest-xdist>=2.5.0        # For parallel test execution
